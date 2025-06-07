@@ -267,80 +267,82 @@ Provide only the JSON output.
             "user_id": user_id,
             "identifier": identifier
         }
+    def _handle_by_current_state(self, user_input: str, state: str) -> str:
+        if state == "account_creation":
+            return self.banking_agent.handle_account_creation_flow(user_input, self.context)
+        elif state == "loan_request":
+            return self.loan_agent.handle_loan_conversation(user_input, self.context)
+        elif state == "fraud_investigation":
+            return self.fraud_agent.handle_fraud_flow(user_input, self.context)
+        elif state == "banking_session":
+            return self.banking_agent.handle_existing_user_query(user_input, self.context)
+        else:
+            return "⚠️ Internal error: Unknown conversation state."
 
     def process_conversation_turn(self, user_input: str) -> str:
-        """Process a single conversation turn with context awareness"""
-        
-        if not user_input.strip():
+        user_input = user_input.strip()
+        if not user_input:
             return "🤔 Please enter a request."
-        
+
         if user_input.lower() in ['exit', 'quit', 'bye', 'goodbye']:
             self.context.reset()
             return "🔄 Returning to the main orchestration agent. Please enter your next request."
-        
-        # Classify intent
+
+        # ✅ If in an active conversation flow, continue without reclassifying
+        if self.context.conversation_state in ["account_creation", "loan_request", "fraud_investigation", "banking_session"]:
+            print(f"🧠 Continuing active flow: {self.context.conversation_state}")
+            response = self._handle_by_current_state(user_input, self.context.conversation_state)
+
+            # ✅ Check if account was created and user ID is returned
+            if "Account created successfully" in response:
+                match = re.search(r'User ID: (U\d+)', response)
+                if match:
+                    self.context.user_id = match.group(1)
+                    self.context.conversation_state = "banking_session"
+                    print(f"🎉 Account created! New User ID: {self.context.user_id}")
+
+            return response
+
+        # ✅ Groq classification for new conversations
         intent_analysis = self.classify_intent(user_input)
         print(f"🔎 Intent Analysis: {intent_analysis}")
-        
-        current_intent = intent_analysis["intent"]
-        
-        # Check if this is a continuation of current conversation
-        if self.context.is_continuing(user_input, current_intent):
-            print(f"🔄 Continuing {self.context.conversation_state} conversation...")
-            
-            # Continue with the active agent
-            if self.context.active_agent == "banking" and self.banking_agent:
-                response = self.banking_agent.process_single_query(user_input, self.context.user_id or "NEWUSER")
-                
-                # Check if account was created (extract new user ID)
-                if "Account created successfully" in response:
-                    user_id_match = re.search(r'User ID: (U\d+)', response)
-                    if user_id_match:
-                        self.context.user_id = user_id_match.group(1)
-                        self.context.conversation_state = "banking_session"
-                        print(f"🎉 Account created! New User ID: {self.context.user_id}")
-                
-                self.context.add_interaction(user_input, response, "banking_services")
-                return response
-            
-            elif self.context.active_agent == "loan" and self.loan_agent:
-                response = self.loan_agent.process_single_query(user_input)
-                self.context.add_interaction(user_input, response, "loan_processing")
-                
-                # Check if more input is needed
-                if "🤔" in response or "Your response" in response:
-                    print("[DEBUG] Awaiting additional user input...")
-                    user_response = input("Your response: ").strip()
-                    if user_response:
-                        return self.process_conversation_turn(user_response)
-                
-                return response
-            
-            elif self.context.active_agent == "fraud" and self.fraud_agent:
-                response = self.fraud_agent.process_single_query(user_input)
-                self.context.add_interaction(user_input, response, "fraud_analysis")
-                return response
-        
-        # New conversation or change of context
-        if current_intent != self.context.last_intent:
-            print(f"🔄 Switching context from {self.context.last_intent} to {current_intent}")
-        
-        # Route to appropriate agent
-        if current_intent == "unclear":
-            return self._handle_unclear_intent()
-        
-        elif current_intent == "fraud_analysis":
-            return self._handle_fraud_analysis(user_input, intent_analysis)
-        
+
+        current_intent = intent_analysis.get("intent")
+        self.context.last_intent = current_intent
+        self.context.user_id = intent_analysis.get("user_id") or "NEWUSER"
+        identifier = intent_analysis.get("identifier")
+
+        # ✅ Set and route to active agent
+        if current_intent == "banking_services":
+            self.context.conversation_state = "account_creation" if self.context.user_id == "NEWUSER" else "banking_session"
+            self.context.active_agent = "banking"
+            response = self.banking_agent.process_single_query(user_input, self.context.user_id)
+
+            # ✅ Repeat account creation check here for direct hits
+            if "Account created successfully" in response:
+                match = re.search(r'User ID: (U\d+)', response)
+                if match:
+                    self.context.user_id = match.group(1)
+                    self.context.conversation_state = "banking_session"
+                    print(f"🎉 Account created! New User ID: {self.context.user_id}")
+
+            return response
+
         elif current_intent == "loan_processing":
-            return self._handle_loan_processing(user_input, intent_analysis)
-        
-        elif current_intent == "banking_services":
-            return self._handle_banking_services(user_input, intent_analysis)
-        
-        else:
-            return "I'm not sure how to help with that request."
-    
+            self.context.conversation_state = "loan_request"
+            self.context.active_agent = "loan"
+            return self.loan_agent.process_single_query(user_input)
+
+        elif current_intent == "fraud_analysis":
+            self.context.conversation_state = "fraud_investigation"
+            self.context.active_agent = "fraud"
+            return self.fraud_agent.process_single_query(user_input)
+
+        elif current_intent == "unclear":
+            return self._handle_unclear_intent()
+
+        return "🤖 I'm not sure how to help with that request."
+
     def _handle_unclear_intent(self) -> str:
         """Handle unclear intent"""
         return """🤔 I'm not sure which service you need. Please clarify:

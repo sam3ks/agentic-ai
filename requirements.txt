@@ -16,6 +16,7 @@ langchain-google-genai
 # Additional utilities
 regex>=2023.0.0
 typing-extensions>=4.8.0
+sentence-transformers
 
 # Optional but recommended for better performance
 aiohttp>=3.8.0

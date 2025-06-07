@@ -11,6 +11,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from sqlalchemy import create_engine, Column, String, Float, Integer, Text, ForeignKey, DateTime
 from sqlalchemy.orm import sessionmaker, relationship, declarative_base
 from sqlalchemy.exc import SQLAlchemyError
+from account_type_mapper import AccountTypeMapper
 
 # Configuration
 DB_NAME = "sqlite:///Banking.db"
@@ -1231,6 +1232,7 @@ class BankingServicesAgent:
     def __init__(self):
         try:
             # Initialize database
+            self.account_type_mapper = AccountTypeMapper()
             DatabaseManager.initialize_database()
             logger.info("Banking Services Agent initialized successfully")
         except Exception as e:
@@ -1267,6 +1269,78 @@ class BankingServicesAgent:
                 "database_connected": False,
                 "error": str(e)
             }
+        
+    def handle_account_creation_flow(self, user_input, context):
+        flow = context.collected_data
+
+        if "email" not in flow:
+            flow["email"] = user_input
+            return f"Email '{user_input}' recorded. Please provide your pan number:"
+
+        elif "pan_number" not in flow:
+            flow["pan_number"] = user_input
+            return f"Pan Number '{user_input}' recorded. Please provide your aadhaar number:"
+
+        elif "aadhaar_number" not in flow:
+            flow["aadhaar_number"] = user_input
+            return f"Aadhaar Number '{user_input}' recorded. Please provide your aadhaar name:"
+
+        elif "aadhaar_name" not in flow:
+            flow["aadhaar_name"] = user_input
+            return f"Aadhaar Name '{user_input}' recorded. Please provide your aadhaar father name:"
+
+        elif "aadhaar_father_name" not in flow:
+            flow["aadhaar_father_name"] = user_input
+            return f"Aadhaar Father Name '{user_input}' recorded. Please provide your aadhaar dob:"
+
+        elif "aadhaar_dob" not in flow:
+            flow["aadhaar_dob"] = user_input
+            return f"Aadhaar Dob '{user_input}' recorded. Please provide your aadhaar address:"
+
+        elif "aadhaar_address" not in flow:
+            flow["aadhaar_address"] = user_input
+            return f"Aadhaar Address '{user_input}' recorded. Please provide your aadhaar mobile:"
+
+        elif "aadhaar_mobile" not in flow:
+            flow["aadhaar_mobile"] = user_input
+            return f"Aadhaar Mobile '{user_input}' recorded. Please provide your account type:"
+
+        elif "account_type" not in flow:
+            try:
+                resolved_type = self.account_type_mapper.resolve(user_input)
+                flow["account_type"] = resolved_type
+                context.conversation_state = "completed"
+                return self.create_account(flow)
+            except Exception:
+                return "⚠️ I couldn't understand that account type. Can you rephrase it?"
+
+        return "✅ Your account has already been created."
+    
+    def create_account(self, collected_data: Dict[str, Any]) -> str:
+        """Creates a new bank account and returns detailed confirmation."""
+        import random
+
+        # Step 1: Extract or assign values
+        user_id = f"U{random.randint(1000, 9999)}"
+        account_number = f"{random.randint(1000000000, 9999999999)}"
+        account_type = collected_data.get("account_type", "Savings")
+        initial_balance = float(collected_data.get("initial_balance", 1000))
+        debit_card = f"DC{random.randint(100000, 999999)}"
+
+        # (Optional) Store this in DB/memory if needed for demo continuity
+
+        # Step 2: Return response
+        return (
+            f"✅ Account created successfully!\n"
+            f"User ID: {user_id}\n"
+            f"Account Number: {account_number}\n"
+            f"Account Type: {account_type}\n"
+            f"Initial Balance: ₹{initial_balance:.2f}\n"
+            f"Debit Card: {debit_card}"
+        )
+
+
+    
 
 # === STATIC METHODS FOR BACKWARDS COMPATIBILITY ===
 def get_agent_status() -> Dict[str, Any]:
