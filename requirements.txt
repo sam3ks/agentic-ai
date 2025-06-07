@@ -1,0 +1,28 @@
+# Core Dependencies
+pandas>=1.5.0,<2.0.0
+numpy>=1.23.0,<2.0.0
+python-dotenv>=0.21.0
+
+# Groq AI Client
+groq>=0.4.0
+
+# LangChain Dependencies
+langchain>=0.1.0,<0.2.0
+langchain-core>=0.1.0,<0.2.0
+langchain-groq>=0.0.1
+langchain-community>=0.0.1
+langchain-google-genai
+
+# Additional utilities
+regex>=2023.0.0
+typing-extensions>=4.8.0
+
+# Optional but recommended for better performance
+aiohttp>=3.8.0
+requests>=2.28.0
+
+# For development and testing (optional)
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+black>=23.0.0
+flake8>=6.0.0
