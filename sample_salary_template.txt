@@ -1,0 +1,37 @@
+'''
+This is a template file showing the expected format for a salary slip PDF.
+For testing purposes, users can create a text file with this content and later convert it to PDF.
+
+SALARY SLIP - APRIL 2025
+
+Employee Name: John Doe
+Employee ID: 12345
+PAN: ABCDE1234F
+Designation: Senior Software Engineer
+
+EARNINGS:                          AMOUNT (₹)
+Basic Salary:                      75,000.00
+House Rent Allowance:              30,000.00
+Special Allowance:                 15,000.00
+Transport Allowance:                3,000.00
+Medical Allowance:                  1,500.00
+                         ------------------
+Gross Earnings:                   124,500.00
+
+DEDUCTIONS:                        AMOUNT (₹)
+Provident Fund:                     9,000.00
+Income Tax:                         8,500.00
+Professional Tax:                     200.00
+Health Insurance:                   1,500.00
+                         ------------------
+Total Deductions:                  19,200.00
+
+NET SALARY:                       105,300.00
+
+ADDITIONAL INFORMATION:
+Employer: TechCorp Solutions Pvt. Ltd.
+Employment Type: Permanent
+
+------------------------------------- 
+This document is computer generated and does not require signature.
+'''

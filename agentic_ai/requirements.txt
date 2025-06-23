@@ -1,0 +1,10 @@
+# requirements.txt
+python-dotenv
+langchain
+groq
+pandas
+numpy
+click
+requests
+PyPDF2
+openai
