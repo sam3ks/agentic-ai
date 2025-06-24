@@ -1,6 +1,7 @@
 import json
 import re
 from agentic_ai.core.agent.base_agent import BaseAgent
+from agentic_ai.core.utils.formatting import format_indian_commas
 
 class SalarySheetGeneratorAgent(BaseAgent):
     """Agent to generate mock salary sheet data for new users."""
@@ -29,8 +30,8 @@ class SalarySheetGeneratorAgent(BaseAgent):
                 "Provide realistic values. Ensure Credit Score is between 300-850.",
                 "",
                 f"User Identifier: {identifier}",
-                f"Monthly Salary Hint: ₹{salary_hint:,.0f}",
-                f"Existing EMI Hint: ₹{emi_hint:,.0f}",
+                f"Monthly Salary Hint: {format_indian_commas(salary_hint)}",
+                f"Existing EMI Hint: {format_indian_commas(emi_hint)}",
                 f"Credit Score Hint: {credit_hint}",
                 "",
                 "Respond in JSON format with generated data:",
@@ -96,7 +97,7 @@ class SalarySheetRetrieverAgent(BaseAgent):
                     "credit_rating": credit_rating,
                     "income_level": affordability,
                     "monthly_disposable_income": monthly_salary - existing_emi,
-                    "existing_debt_burden": f"₹{existing_emi:,.0f} per month"
+                    "existing_debt_burden": f"{format_indian_commas(existing_emi)} per month"
                 },
                 "status": "salary_sheet_data_retrieved_successfully"
             }
@@ -109,3 +110,6 @@ class SalarySheetRetrieverAgent(BaseAgent):
     def run(self, salary_sheet_json: str) -> str:
         """Runs the agent's specific task."""
         return self.retrieve_financial_data(salary_sheet_json)
+
+    def _format_currency(self, amount):
+        return format_indian_commas(amount)

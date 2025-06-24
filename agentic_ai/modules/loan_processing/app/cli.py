@@ -1,6 +1,7 @@
 # cli.py
 from agentic_ai.modules.loan_processing.orchestrator.loan_agent_orchestrator import LoanAgentOrchestrator
 from agentic_ai.core.llm.factory import LLMFactory
+from agentic_ai.modules.loan_processing.agents.base_agent import BaseAgent
 
 def process_loan_application(user_request: str):
     """
@@ -25,6 +26,12 @@ def process_loan_application(user_request: str):
     print("=" * 60)
     
     result = orchestrator.process_application(user_request)
+    
+    # Post-process output for Indian comma formatting
+    if hasattr(orchestrator, 'postprocess_output'):
+        result = orchestrator.postprocess_output(result)
+    elif hasattr(BaseAgent, 'postprocess_output'):
+        result = BaseAgent().postprocess_output(result)
     
     print(f"\n{'='*60}")
     print("✅ PROCESSING COMPLETE")

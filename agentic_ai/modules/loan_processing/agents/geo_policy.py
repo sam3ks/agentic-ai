@@ -1,10 +1,50 @@
 import json
 import re
+import os
+from typing import Dict, Any, Optional
 from agentic_ai.core.agent.base_agent import BaseAgent
 from agentic_ai.core.utils.parsing import extract_json_from_string
+from agentic_ai.core.utils.formatting import format_indian_commas
 
 class GeoPolicyAgent(BaseAgent):
     """Specialized agent for geographic policy validation."""
+    
+    def __init__(self):
+        super().__init__()
+        self.purpose_policy_data = self._load_purpose_policy_data()
+    
+    def _load_purpose_policy_data(self) -> Dict[str, Any]:
+        """Load loan purpose policy data from JSON file."""
+        try:
+            # Get the directory of the current file
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            # Go up one level to the loan_processing module and then into the data directory
+            data_dir = os.path.join(os.path.dirname(current_dir), "data")
+            policy_path = os.path.join(data_dir, "loan_purpose_policy.json")
+            
+            if os.path.exists(policy_path):
+                with open(policy_path, 'r') as f:
+                    return json.load(f)
+            return {}
+        except Exception:
+            return {}
+    
+    def _check_purpose_eligibility(self, purpose: str) -> Optional[Dict[str, Any]]:
+        """Check if the purpose is eligible based on policy."""
+        if not self.purpose_policy_data:
+            return None
+        
+        # Direct match first
+        if purpose in self.purpose_policy_data:
+            return self.purpose_policy_data.get(purpose)
+        
+        # Case-insensitive search
+        purpose_lower = purpose.lower()
+        for key, value in self.purpose_policy_data.items():
+            if key.lower() == purpose_lower:
+                return value
+        
+        return None
 
     def validate_geo_policy(self, query: str) -> str:
         """Validates geographic policies using LLM reasoning."""
@@ -43,8 +83,25 @@ class GeoPolicyAgent(BaseAgent):
                     "status": "rejected",
                     "action_required": "Amount must be a valid number"
                 })
+            
+            # Check purpose eligibility from the policy data
+            purpose_policy = self._check_purpose_eligibility(purpose)
+            if purpose_policy and purpose_policy.get("eligibility") == "prohibited":
+                return json.dumps({
+                    "error": f"CRITICAL ERROR: Loan purpose '{purpose}' is prohibited",
+                    "status": "rejected",
+                    "reason": purpose_policy.get("reason", "This purpose is not eligible for loans according to our policy."),
+                    "notes": purpose_policy.get("notes", ""),
+                    "policy_ref": purpose_policy.get("policy_ref", ""),
+                    "action_required": "Please inform the user that this loan purpose is not eligible."
+                })
+            
+            # Proceed with the normal validation
+            # Add policy category to the prompt if available
+            category_info = ""
+            if purpose_policy:
+                category_info = f"\nLoan Category: {purpose_policy.get('category', 'N/A')}"
                 
-            # Now proceed with the normal validation
             parsing_prompt = f"""
 You are a loan policy expert. Parse this geographic policy validation request:
 
@@ -69,6 +126,7 @@ You MUST respond ONLY with a valid JSON object in the EXACT format shown below:
 
 Ensure all fields are present, with "city" as a string, "purpose" as a string, "amount" as a numeric value, "valid_request" as a boolean, and "errors" as an array of strings (empty if valid_request is true).
 DO NOT include any text or explanation outside of the JSON.
+{category_info}
 """
             try:
                 parsing_result = self.llm._call(parsing_prompt)
@@ -139,25 +197,21 @@ DO NOT include any text or explanation outside of the JSON.
                     "action_required": "Please ask the user for a valid loan amount explicitly."
                 })
 
+            # Import formatting utility
+            from agentic_ai.core.utils.formatting import format_indian_currency_without_decimal
+            
             policy_prompt = f"""
 You are a senior loan policy officer. Make a geographic policy decision for this loan:
 
 City: {city}
-Loan Purpose: {purpose}
-Requested Amount: ₹{amount:,.0f}
+Loan Purpose: {purpose}{category_info}
+Loan Amount: ₹{amount:,.2f}
 
-Indian Banking Regulations and City-wise Policies:
-- Mumbai: High-value city, max loan ₹20,00,000
-- Delhi: Capital city, max loan ₹15,00,000
-- Bangalore: Tech hub, max loan ₹20,00,000
-- Chennai: Industrial city, max loan ₹10,00,000
-- Kolkata: Traditional city, max loan ₹12,00,000
-- Hyderabad: Growing city, max loan ₹15,00,000
-- Pune: Educational hub, max loan ₹12,00,000
-- Surat: Emerging trade center, max loan ₹12,00,000
-- Ahmedabad: Commercial city, max loan ₹15,00,000
-- Jaipur: Tourism and culture hub, max loan ₹12,00,000
-- Other cities: Standard policy, max loan ₹10,00,000
+Please evaluate if this loan should proceed based on geographical policy considerations.
+Your decision should weigh:
+- The maximum allowable loan amount for the specified city.
+- Any specific conditions or restrictions associated with the loan purpose.
+- General policy guidelines and risk factors.
 
 You MUST respond ONLY with a valid JSON object in the EXACT format below:
 
@@ -179,7 +233,7 @@ DO NOT include any text, explanation, or markdown formatting outside of the JSON
                 # Print a visual separator to highlight geo policy assessment
                 print("\n" + "=" * 50)
                 print("🌎 GEO POLICY ASSESSMENT")
-                print(f"📍 City: {city} | 🏦 Purpose: {purpose} | 💰 Amount: ₹{amount:,.0f}")
+                print(f"📍 City: {city} | 🏦 Purpose: {purpose} | 💰 Amount: {format_indian_commas(amount)}")
                 
                 policy_result = self.llm._call(policy_prompt)
                 print(f"💭 Policy Reasoning: Processing geographic eligibility...")
@@ -228,7 +282,7 @@ DO NOT include any text, explanation, or markdown formatting outside of the JSON
                 # Display the reasoning for better visibility
                 print(f"💭 Policy Decision: {policy_decision['policy_decision']}")
                 print(f"💭 Reasoning: {policy_decision['reasoning']}")
-                print(f"💭 Max Allowed: ₹{policy_decision['max_allowed_amount']:,.0f}")
+                print(f"💭 Max Allowed: {format_indian_commas(policy_decision['max_allowed_amount'])}")
                 print(f"💭 Conditions: {', '.join(policy_decision['conditions'])}")
                 print("=" * 50 + "\n")
                 return json.dumps(result, indent=2, ensure_ascii=False)
@@ -255,3 +309,6 @@ DO NOT include any text, explanation, or markdown formatting outside of the JSON
     def run(self, query: str) -> str:
         """Runs the agent's specific task."""
         return self.validate_geo_policy(query)
+
+    def _format_currency(self, amount):
+        return format_indian_commas(amount)

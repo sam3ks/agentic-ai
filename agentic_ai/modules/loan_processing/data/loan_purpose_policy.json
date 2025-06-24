@@ -1,0 +1,93 @@
+{
+"education": {
+"eligibility": "permitted",
+"category": "priority_sector",
+"requirement": "Standard underwriting applies",
+"notes": "Eligible under Priority Sector Lending norms",
+"policy_ref": "RBI Master Directions on PSL - FIDD.CO.Plan.BC.54/04.09.01/2016-17"
+},
+"home purchase": {
+"eligibility": "permitted",
+"category": "retail_home_loan",
+"requirement": "LTV ratio <= 80%, clear property title required",
+"notes": "Available under housing finance norms for individuals",
+"policy_ref": "RBI Circular DBR.No.BP.BC.99/08.13.100/2017-18"
+},
+"vehicle purchase": {
+"eligibility": "permitted",
+"category": "retail_vehicle_loan",
+"requirement": "Vehicle must be registered and insured; max tenure 7 years",
+"notes": "Applicable for both new and used vehicles under NBFC or bank loan guidelines",
+"policy_ref": "RBI Circular DNBR (PD) CC.No.091/03.10.001/2017-18"
+},
+"medical emergency": {
+"eligibility": "permitted",
+"category": "personal_medical",
+"requirement": "Requires hospital invoice or treatment plan",
+"notes": "May qualify for pre-approved unsecured personal loan",
+"policy_ref": "Internal Bank Lending Policy - Personal Loan"
+},
+"business expansion": {
+"eligibility": "permitted",
+"category": "MSME",
+"requirement": "Udyam registration and financials required",
+"notes": "Eligible under MSME Priority Lending; collateral may be required",
+"policy_ref": "RBI Master Direction on MSME - FIDD.MSME & NFS.BC.No.3/06.02.31/2017-18"
+},
+"marriage": {
+"eligibility": "permitted",
+"category": "personal_consumption",
+"requirement": "KYC and income check required",
+"notes": "Unsecured personal loan with max limit ₹10 lakhs",
+"policy_ref": "Internal Bank Circular - Retail Personal Loan"
+},
+"travel": {
+"eligibility": "conditionally_permitted",
+"category": "personal_travel",
+"requirement": "Income check + employer NOC for salaried",
+"notes": "Limited approval based on risk profile; not covered under PSL",
+"policy_ref": "Internal Bank Policy - Unsecured Lending Risk Matrix"
+},
+"crypto trading": {
+"eligibility": "prohibited",
+"category": "unregulated_activity",
+"reason": "Volatile and lacks regulatory backing",
+"notes": "Loans for investment in virtual digital assets are not permitted",
+"policy_ref": "RBI Circular DOR.AML.BC.No.31/14.01.001/2021-22"
+},
+"gambling": {
+"eligibility": "prohibited",
+"category": "high_risk_activity",
+"reason": "Associated with money laundering and addiction risks",
+"notes": "Strictly not allowed for lending due to compliance and ethical risks",
+"policy_ref": "RBI Circular 2019-20/62 & AML Guidelines"
+},
+"stock market trading": {
+"eligibility": "prohibited",
+"category": "speculative_activity",
+"reason": "High-risk leveraged trading prohibited for personal lending",
+"notes": "Margin funding is allowed only via regulated brokers; not via personal loans",
+"policy_ref": "RBI Guidelines on Consumer Credit Risk Management"
+},
+"debt consolidation": {
+"eligibility": "permitted",
+"category": "personal_financial_restructuring",
+"requirement": "Proof of existing liabilities required",
+"notes": "Often issued under balance transfer schemes or structured personal loans",
+"policy_ref": "Internal Lending Framework - Retail Portfolio Guidelines"
+},
+"luxury purchases": {
+"eligibility": "conditionally_permitted",
+"category": "high_value_consumption",
+"requirement": "Customer must fall under premium risk tier",
+"notes": "Applicable only for high net-worth individuals (HNI) with financial strength",
+"policy_ref": "Bank Credit Risk Categorization Policy - HNI Tier Rules"
+},
+"illegal interests": {
+"eligibility": "prohibited",
+"category": "criminal_activity",
+"reason": "Involves activities that are unlawful or criminal in nature",
+"notes": "Loan applications related to illegal businesses, trafficking, terrorism financing, or other criminal enterprises are strictly prohibited",
+"policy_ref": "RBI AML Guidelines & Prevention of Money Laundering Act (PMLA), 2002"
+}
+}

@@ -8,8 +8,10 @@ from agentic_ai.modules.loan_processing.agents.risk_assessment import RiskAssess
 from agentic_ai.modules.loan_processing.agents.user_interaction import UserInteractionAgent
 from agentic_ai.modules.loan_processing.agents.salary_sheet import SalarySheetGeneratorAgent, SalarySheetRetrieverAgent
 from agentic_ai.modules.loan_processing.agents.pdf_salary_extractor import PDFSalaryExtractorAgent
+from agentic_ai.modules.loan_processing.agents.loan_purpose_assessment import LoanPurposeAssessmentAgent
 from agentic_ai.core.orchestrator.agent_executor_factory import create_agent_executor
 from agentic_ai.core.utils.parsing import parse_initial_user_request
+from agentic_ai.core.utils.formatting import format_indian_commas
 
 class LoanAgentOrchestrator:
     """Orchestrates the loan processing workflow."""
@@ -23,6 +25,7 @@ class LoanAgentOrchestrator:
         self.salary_generator = SalarySheetGeneratorAgent()
         self.salary_retriever = SalarySheetRetrieverAgent()
         self.pdf_extractor = PDFSalaryExtractorAgent()
+        self.purpose_agent = LoanPurposeAssessmentAgent() # Add purpose assessment agent
         
         self.tools = self._setup_tools()
         self.agent_executor = create_agent_executor(self.tools)
@@ -33,6 +36,11 @@ class LoanAgentOrchestrator:
                 name="UserInteraction",
                 description="THE FIRST TOOL TO USE. Get user input. Input: question to ask the user. You MUST ask for loan purpose, loan amount, and city explicitly using separate questions.",
                 func=self.interaction_agent.run
+            ),
+            Tool(
+                name="LoanPurposeAssessment",
+                description="CRITICAL: ALWAYS run this after collecting loan purpose. Input: loan purpose text. The purpose should be directly from the user's input. This tool evaluates if the purpose is permitted. Returns matched category and policy details.",
+                func=self.purpose_agent.run
             ),
             Tool(
                 name="DataQuery",
@@ -69,6 +77,14 @@ class LoanAgentOrchestrator:
     def process_application(self, user_input: str) -> str:
         """Processes a loan application."""
         initial_loan_details = parse_initial_user_request(user_input)
+        # Format amount in Indian style for prompt and replace in user_input
+        if 'amount' in initial_loan_details and initial_loan_details['amount']:
+            formatted_amount = format_indian_commas(initial_loan_details['amount'])
+            # Replace all international formatted numbers in user_input with Indian format
+            import re
+            user_input = re.sub(r"(\d{1,3}(?:,\d{3})+|\d{7,})", formatted_amount, user_input)
+        else:
+            formatted_amount = None
         
         if not self.agent_executor:
             return self._fallback_processing(user_input, "Agent executor not initialized")
@@ -83,13 +99,18 @@ class LoanAgentOrchestrator:
 
         if initial_loan_details.get("purpose", "unknown") == "unknown":
             prompt_parts.append("1. Ask for loan purpose using UserInteraction.")
+        prompt_parts.append("2. ALWAYS submit the purpose to LoanPurposeAssessment to evaluate eligibility.")
+        prompt_parts.append("   - If purpose is 'prohibited' (eligibility), stop processing and inform user.")
+        prompt_parts.append("   - If purpose is 'conditionally_permitted', explain the conditions from policy_details.")
+        prompt_parts.append("   - Only continue if purpose is 'permitted' or conditions are met.")
+        
         if initial_loan_details.get("amount", 0) == 0:
-            prompt_parts.append("2. Ask for loan amount using UserInteraction.")
+            prompt_parts.append("3. Ask for loan amount using UserInteraction.")
         
-        prompt_parts.append("3. Ask for PAN/Aadhaar using UserInteraction.")
-        prompt_parts.append("4. Query user data with DataQuery.")
+        prompt_parts.append("4. Ask for PAN/Aadhaar using UserInteraction.")
+        prompt_parts.append("5. Query user data with DataQuery.")
         
-        prompt_parts.append("""5. HANDLE USER TYPE:
+        prompt_parts.append("""6. HANDLE USER TYPE:
    - If EXISTING USER is found:
      a. Ask user: "Do you want to update your salary information? (yes/no)" with UserInteraction
      b. If YES → Ask for PDF path: "Please provide the path to your salary PDF document" with UserInteraction
@@ -108,11 +129,11 @@ class LoanAgentOrchestrator:
         the PDF extraction actually fails after multiple attempts.""")
 
         if initial_loan_details.get("city", "unknown") == "unknown":
-            prompt_parts.append("6. Ask for city using UserInteraction.")
+            prompt_parts.append("7. Ask for city using UserInteraction.")
 
-        prompt_parts.append("7. Run GeoPolicyCheck with format: city:CITY,purpose:PURPOSE,amount:AMOUNT.")
-        prompt_parts.append("8. Run RiskAssessment with user data and amount.")
-        prompt_parts.append("9. Make a final decision combining both assessments.")
+        prompt_parts.append("8. Run GeoPolicyCheck with format: city:CITY,purpose:PURPOSE,amount:AMOUNT.")
+        prompt_parts.append("9. Run RiskAssessment with user data and amount.")
+        prompt_parts.append("10. Make a final decision combining LoanPurposeAssessment, GeoPolicyCheck, and RiskAssessment.")
         prompt_parts.append("\nDO NOT SKIP ANY STEP OR CHANGE THE ORDER.")
 
         coordination_prompt = "\n".join(prompt_parts)
@@ -133,4 +154,12 @@ class LoanAgentOrchestrator:
 **Requested Input:** {user_input}
 **Action Required:** Please check system configuration and resubmit.
 """
+
+    def _format_final_response(self, text: str) -> str:
+        import re
+        def replace_with_indian_commas(match):
+            num = int(match.group(0).replace(",", ""))
+            return format_indian_commas(num)
+        text = re.sub(r"\d{1,3}(?:,\d{3})+|\d{7,}", replace_with_indian_commas, text)
+        return text
 

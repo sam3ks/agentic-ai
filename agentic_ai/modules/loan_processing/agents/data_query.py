@@ -1,6 +1,7 @@
 import json
 from agentic_ai.core.agent.base_agent import BaseAgent
 from agentic_ai.modules.loan_processing.services.loan_data_service import LoanDataService
+from agentic_ai.core.utils.formatting import format_indian_commas
 
 class DataQueryAgent(BaseAgent):
     """Specialized agent for data querying."""
@@ -8,6 +9,9 @@ class DataQueryAgent(BaseAgent):
     def __init__(self, data_service: LoanDataService):
         super().__init__()
         self.data_service = data_service
+
+    def _format_currency(self, amount):
+        return format_indian_commas(amount)
 
     def query_user_data(self, query: str) -> str:
         """Queries user data with validation and processing."""
@@ -23,15 +27,11 @@ class DataQueryAgent(BaseAgent):
                 identifier = clean_query
             else:
                 # If direct validation fails, try LLM-based extraction
-                validation_prompt = f"""Extract PAN or Aadhaar from: "{query}"
-
-PAN format: 5 letters + 4 digits + 1 letter (e.g., ABCDE1234F)
-Aadhaar format: 12 digits (e.g., 123456789012)
-
-Return only the identifier, nothing else. If neither is found, return "N/A"."""
+                validation_prompt = f"""Extract PAN or Aadhaar from: \"{query}\"\n\nPAN format: 5 letters + 4 digits + 1 letter (e.g., ABCDE1234F)\nAadhaar format: 12 digits (e.g., 123456789012)\n\nReturn only the identifier, nothing else. If neither is found, return \"N/A\"."""
                 
                 try:
                     identifier = self.llm._call(validation_prompt).strip()
+                    print(f"[DEBUG] Extracted identifier from LLM: {identifier}")
                     if identifier == "N/A":
                         return json.dumps({"error": "No valid PAN or Aadhaar found in the query."})
                 except Exception as e:
@@ -39,7 +39,12 @@ Return only the identifier, nothing else. If neither is found, return "N/A"."""
                     identifier = clean_query
                     if identifier.startswith('identifier:'):
                         identifier = identifier.split(':', 1)[1].strip()
-            
+
+            # Final validation before proceeding (enforced regardless of LLM output)
+            if not (is_pan(identifier) or is_aadhaar(identifier)):
+                print(f"[DEBUG] Identifier '{identifier}' is not a valid PAN or Aadhaar. Aborting.")
+                return json.dumps({"error": "No valid PAN or Aadhaar found in the query."})
+
             # Print a visual separator to highlight data query process
             print("\n" + "=" * 50)
             print("🔍 DATA QUERY ANALYSIS")
@@ -67,7 +72,7 @@ Return only the identifier, nothing else. If neither is found, return "N/A"."""
                     credit_rating = "Excellent" if credit_score >= 750 else "Good" if credit_score >= 700 else "Fair" if credit_score >= 650 else "Poor"
                     affordability = "High" if monthly_salary > 75000 else "Medium" if monthly_salary > 40000 else "Limited"
                     
-                    print(f"💭 Thought: User has monthly salary of ₹{monthly_salary:,.0f}, credit score of {credit_score} ({credit_rating}), and existing EMI of ₹{existing_emi:,.0f}.")
+                    print(f"💭 Thought: User has monthly salary of {self._format_currency(monthly_salary)}, credit score of {credit_score} ({credit_rating}), and existing EMI of {self._format_currency(existing_emi)}.")
                     print(f"💭 Thought: Based on income and existing obligations, affordability level is {affordability}.")
                     print("=" * 50 + "\n")
                     
@@ -77,7 +82,7 @@ Return only the identifier, nothing else. If neither is found, return "N/A"."""
                             "credit_rating": credit_rating,
                             "income_level": affordability,
                             "monthly_disposable_income": monthly_salary - existing_emi,
-                            "existing_debt_burden": f"₹{existing_emi:,.0f} per month"
+                            "existing_debt_burden": f"{self._format_currency(existing_emi)} per month"
                         },
                         "status": "existing_user_found",
                         "action_needed": "ask_about_salary_update",

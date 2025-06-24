@@ -1,6 +1,8 @@
 # parsing.py
 import re
 import json
+import numpy as np
+from sentence_transformers import SentenceTransformer
 from agentic_ai.core.config.constants import AVAILABLE_CITIES
 
 def extract_json_from_string(text: str) -> dict:
@@ -56,31 +58,82 @@ def extract_json_from_string(text: str) -> dict:
 def parse_initial_user_request(user_input: str) -> dict:
     """
     Parses the initial user request to extract loan purpose, amount, and city.
+    Uses sentence transformers for semantic purpose matching and regex for amount and city.
     """
     loan_purpose = "unknown"
     loan_amount = 0.0
     loan_city = "unknown"
 
-    # Extract city
+    print(f"[DEBUG] Parsing initial request: {user_input}")
+    
+    # Define predefined loan purposes
+    predefined_purposes = [
+        "education", 
+        "home purchase",
+        "vehicle purchase", 
+        "medical emergency", 
+        "business expansion",
+        "marriage", 
+        "travel", 
+        "crypto trading", 
+        "gambling", 
+        "stock market trading",
+        "debt consolidation", 
+        "luxury purchases", 
+        "illegal interests",
+        "personal loan",
+        "car loan",
+        "bike loan",
+        "medical loan",
+        "home loan"
+    ]
+    
+    # Check if the input appears to be a loan request at all
+    loan_related_phrases = [
+        "loan", "borrow", "lend", "finance", "credit", "money for", "need funds", 
+        "funding for", "want to buy", "purchase", "investing in"
+    ]
+    is_likely_loan_request = any(phrase in user_input.lower() for phrase in loan_related_phrases)
+    
+    # If it doesn't look like a loan request at all, don't try to extract a purpose
+    if not is_likely_loan_request:
+        print("[DEBUG] Input doesn't appear to be a loan request")
+        loan_purpose = "unknown"
+    else:
+        # Try to identify the purpose using semantic matching with sentence transformers
+        model = get_sentence_transformer_model()
+        if model:
+            # Find the best matching purpose semantically
+            loan_purpose = find_best_matching_purpose(user_input, model, predefined_purposes, threshold=0.65)
+        else:
+            # Fallback to regex if model couldn't be loaded
+            print("[DEBUG] Falling back to regex for purpose extraction")
+        if re.search(r'\b(bike|car|home|business|education|student|personal|medical|vehicle|auto)\s+loan\b', user_input, re.IGNORECASE):
+            direct_match = re.search(r'\b(bike|car|home|business|education|student|personal|medical|vehicle|auto)\b', user_input, re.IGNORECASE)
+            if direct_match:
+                loan_purpose = direct_match.group(1).strip().lower()
+                print(f"[DEBUG] Direct match found purpose: {loan_purpose}")
+
+    # Extract city - will do a first pass with exact matches
+    city_found = False
     for city in AVAILABLE_CITIES:
         if re.search(r'\b' + re.escape(city) + r'\b', user_input, re.IGNORECASE):
             loan_city = city
+            print(f"[DEBUG] Found exact match for city: {loan_city}")
+            city_found = True
             break
+    
+    # If no exact match, try to extract any city-like word for further processing
+    if not city_found:
+        # Look for words that might be cities
+        words = re.findall(r'\b[A-Z][a-z]{3,}\b', user_input)
+        if words:
+            for word in words:
+                # Cities that aren't in our list will be handled by fuzzy matching later
+                print(f"[DEBUG] Found potential city mention: {word}")
+                loan_city = word  # This will be validated by the fuzzy matcher
 
-    # More robust regex to capture purpose
-    purpose_match = re.search(r'(?:loan for|for a|need a|i want a)\s+((?:an?|\s)*[\w\s]+?)(?:\s+loan)?', user_input, re.IGNORECASE)
-    if purpose_match:
-        loan_purpose = purpose_match.group(1).strip()
-        # remove city from purpose if it was captured
-        if loan_city != "unknown":
-            loan_purpose = loan_purpose.replace(loan_city, "").strip()
-    else:
-        # Fallback for simple cases like "car loan"
-        purpose_match = re.search(r'(\w+)\s+loan', user_input, re.IGNORECASE)
-        if purpose_match:
-            loan_purpose = purpose_match.group(1).strip()
-
-    # Amount regex
+    # Amount regex - keep using regex for this as it's more accurate for numeric extraction
     amount_match = re.search(r'(\d+(?:,\d+)*(?:\.\d+)?)\s*(lakhs?|million|crore)?', user_input, re.IGNORECASE)
     if amount_match:
         amount_str = amount_match.group(1).replace(',', '')
@@ -92,12 +145,114 @@ def parse_initial_user_request(user_input: str) -> dict:
             loan_amount *= 1000000
         elif 'crore' in unit:
             loan_amount *= 10000000
+        print(f"[DEBUG] Found amount: {loan_amount}")
     
-    # Clean up purpose if it still contains amount details
-    if amount_match and loan_purpose != "unknown":
-        loan_purpose = loan_purpose.replace(amount_match.group(0).strip(), "").strip()
-        
-    # Remove extra words from purpose
-    loan_purpose = re.sub(r'\b(for|a|an)\b', '', loan_purpose, re.IGNORECASE).strip()
+    # Final debug output
+    print(f"[DEBUG] Final parsed values - Purpose: '{loan_purpose}', Amount: {loan_amount}, City: '{loan_city}'")
+    
+    # Clean up purpose by removing filler words if we're still using a string from regex
+    if loan_purpose != "unknown" and model is None:
+        loan_purpose = re.sub(r'\b(for|a|an)\b', '', loan_purpose, re.IGNORECASE).strip()
 
     return {"purpose": loan_purpose, "amount": loan_amount, "city": loan_city}
+
+def find_best_matching_purpose(user_input: str, model: SentenceTransformer, predefined_purposes: list, threshold: float = 0.65) -> str:
+    """
+    Find the best matching loan purpose from predefined purposes using semantic similarity.
+    Includes checks to avoid matching general conversation to loan purposes.
+    
+    Args:
+        user_input: The user's loan request text
+        model: The SentenceTransformer model to use for encoding
+        predefined_purposes: List of predefined loan purposes
+        threshold: Minimum similarity score to consider a match (default: 0.65)
+        
+    Returns:
+        The best matching purpose or "unknown" if no good match is found
+    """
+    try:
+        print(f"[DEBUG] Matching loan purpose using semantic similarity for: '{user_input}'")
+        
+        # Encode the user input
+        user_embedding = model.encode([user_input])
+        
+        # Define non-purpose phrases (general conversation)
+        non_purpose_phrases = [
+            "hello",
+            "hi there",
+            "how are you",
+            "what's up",
+            "good morning",
+            "good afternoon", 
+            "nice to meet you",
+            "how's it going",
+            "what can you do"
+        ]
+        
+        # Check if input is closer to general conversation than loan purposes
+        non_purpose_embeddings = model.encode(non_purpose_phrases)
+        non_purpose_similarities = np.dot(user_embedding, non_purpose_embeddings.T)[0]
+        max_non_purpose_similarity = np.max(non_purpose_similarities)
+        
+        # If input is very similar to general conversation, return "unknown"
+        if max_non_purpose_similarity > 0.7:  # High threshold for general conversation
+            print(f"[DEBUG] Input appears to be general conversation (similarity: {max_non_purpose_similarity:.4f})")
+            return "unknown"
+            
+        # Encode the predefined purposes
+        purpose_embeddings = model.encode(predefined_purposes)
+        
+        # Calculate cosine similarity between user input and all predefined purposes
+        similarities = np.dot(user_embedding, purpose_embeddings.T)[0]
+        
+        # Find the top 3 matches for better debugging
+        top_indices = np.argsort(similarities)[::-1][:3]
+        for i, idx in enumerate(top_indices):
+            print(f"[DEBUG] Match #{i+1}: '{predefined_purposes[idx]}' (score: {similarities[idx]:.4f})")
+            
+        # Find the purpose with the highest similarity score
+        best_match_idx = top_indices[0]
+        best_match_score = similarities[best_match_idx]
+        best_match = predefined_purposes[best_match_idx]
+        
+        print(f"[DEBUG] Selected match: '{best_match}'")
+        
+        # Check for loan-related keywords to increase confidence
+        loan_keywords = ["loan", "borrow", "money", "finance", "credit", "lend", "funding"]
+        has_loan_keyword = any(keyword in user_input.lower() for keyword in loan_keywords)
+        
+        # Adjust threshold based on presence of loan keywords
+        effective_threshold = threshold
+        if not has_loan_keyword:
+            # If no loan keyword is present, require a higher similarity score
+            effective_threshold = 0.75
+            
+        # Return the matched purpose if it meets the threshold, otherwise "unknown"
+        if best_match_score >= effective_threshold:
+            print(f"[DEBUG] Purpose matched: '{best_match}'")
+            return best_match
+        else:
+            print(f"[DEBUG] No purpose match above threshold {effective_threshold}")
+            return "unknown"
+    except Exception as e:
+        print(f"[DEBUG] Error in purpose matching: {str(e)}")
+        return "unknown"
+
+# Initialize the sentence transformer model (load only once for efficiency)
+_sentence_transformer_model = None
+
+def get_sentence_transformer_model():
+    """
+    Get or initialize the sentence transformer model.
+    Uses lazy loading for efficiency.
+    """
+    global _sentence_transformer_model
+    if _sentence_transformer_model is None:
+        try:
+            # Use a smaller but efficient model for faster inference
+            _sentence_transformer_model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
+            print("[DEBUG] SentenceTransformer model loaded successfully")
+        except Exception as e:
+            print(f"[DEBUG] Error loading SentenceTransformer model: {str(e)}")
+            return None
+    return _sentence_transformer_model

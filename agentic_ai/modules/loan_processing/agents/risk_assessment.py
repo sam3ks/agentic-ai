@@ -2,6 +2,7 @@ import json
 import re
 from agentic_ai.core.agent.base_agent import BaseAgent
 from agentic_ai.core.utils.parsing import extract_json_from_string
+from agentic_ai.core.utils.formatting import format_indian_commas
 
 class RiskAssessmentAgent(BaseAgent):
     """Specialized agent for risk assessment."""
@@ -9,6 +10,52 @@ class RiskAssessmentAgent(BaseAgent):
     def assess_risk(self, query: str) -> str:
         """Performs comprehensive risk assessment using LLM analysis."""
         try:
+            # --- Risk Tiers Definition ---
+            risk_tiers = [
+                {
+                    "name": "Low Risk",
+                    "credit_score_range": [750, 900],
+                    "composite_score_min": 85,
+                    "decision": "approve",
+                    "interest_adjustment": 0.0,
+                    "notes": "Eligible for best rate and full approval"
+                },
+                {
+                    "name": "Moderate Risk",
+                    "credit_score_range": [700, 749],
+                    "composite_score_min": 70,
+                    "decision": "approve",
+                    "interest_adjustment": 1.5,
+                    "notes": "Minor premium on interest rate"
+                },
+                {
+                    "name": "Cautionary",
+                    "credit_score_range": [650, 699],
+                    "composite_score_min": 60,
+                    "decision": "approve_with_conditions",
+                    "interest_adjustment": 2.5,
+                    "max_loan_amount_pct": 80,
+                    "notes": "Approval with reduced amount or shorter tenure"
+                },
+                {
+                    "name": "High Risk",
+                    "credit_score_range": [600, 649],
+                    "composite_score_min": 50,
+                    "decision": "escalate",
+                    "require_collateral": True,
+                    "collateral_type": ["property", "fixed_deposit", "co_applicant"],
+                    "notes": "Escalate to human underwriter or offer secured loan"
+                },
+                {
+                    "name": "Unacceptable",
+                    "credit_score_range": [0, 599],
+                    "composite_score_min": 0,
+                    "decision": "reject",
+                    "require_collateral": False,
+                    "notes": "Reject as per lending policy"
+                }
+            ]
+            
             print(f"⚠️ Risk assessment query: {query}")
             
             # Try to extract loan amount from the query string
@@ -60,20 +107,21 @@ class RiskAssessmentAgent(BaseAgent):
             monthly_salary = actual_user_data.get('monthly_salary', 0)
             existing_emi = actual_user_data.get('existing_emi', 0)
             credit_score = actual_user_data.get('credit_score', 0)
+            composite_score = actual_user_data.get('composite_score', None)
 
             # Print a visual separator to highlight risk assessment
             print("\n" + "=" * 50)
             print("🔎 RISK ASSESSMENT ANALYSIS")
-            print(f"💰 Monthly Income: ₹{monthly_salary:,.0f} | 💳 Credit Score: {credit_score} | 📊 Existing EMI: ₹{existing_emi:,.0f}")
-            print(f"💭 Thought: Analyzing financial capacity for a loan request of ₹{loan_amount:,.0f}...")
+            print(f"💰 Monthly Income: {format_indian_commas(monthly_salary)} | 💳 Credit Score: {credit_score} | 📊 Existing EMI: {format_indian_commas(existing_emi)}")
+            print(f"💭 Thought: Analyzing financial capacity for a loan request of {format_indian_commas(loan_amount)}...")
 
             prompt = f"""
 Analyze the loan risk for the following applicant in 3-4 concise lines.
 Applicant Details:
-- Monthly Salary: ₹{monthly_salary:,.0f}
-- Existing EMI: ₹{existing_emi:,.0f}
+- Monthly Salary: {format_indian_commas(monthly_salary)}
+- Existing EMI: {format_indian_commas(existing_emi)}
 - Credit Score: {credit_score}
-Loan Requested: ₹{loan_amount:,.0f}
+Loan Requested: {format_indian_commas(loan_amount)}
 
 Based on this information, provide a risk assessment, overall decision (Approve/Conditional/Reject), and a brief justification.
 """
@@ -94,6 +142,20 @@ Based on this information, provide a risk assessment, overall decision (Approve/
                 elif dti_ratio > 30:
                     print("💭 Note: Projected DTI exceeds 30% recommended threshold")
             
+            # --- Risk Category Calculation ---
+            def get_risk_category(credit_score, composite_score=None):
+                for tier in risk_tiers:
+                    cs_min, cs_max = tier["credit_score_range"]
+                    comp_min = tier["composite_score_min"]
+                    if composite_score is not None:
+                        if cs_min <= credit_score <= cs_max and composite_score >= comp_min:
+                            return tier
+                    else:
+                        if cs_min <= credit_score <= cs_max:
+                            return tier
+                return risk_tiers[-1]  # Default to Unacceptable
+            risk_tier = get_risk_category(credit_score, composite_score)
+
             print("=" * 50 + "\n")
             
             return json.dumps({
@@ -103,6 +165,7 @@ Based on this information, provide a risk assessment, overall decision (Approve/
                     "credit_score": credit_score,
                 },
                 "llm_risk_assessment": llm_analysis,
+                "risk_category": risk_tier,
                 "status": "dynamic_risk_assessment_completed"
             }, indent=2)
             
@@ -112,3 +175,6 @@ Based on this information, provide a risk assessment, overall decision (Approve/
     def run(self, query: str) -> str:
         """Runs the agent's specific task."""
         return self.assess_risk(query)
+
+    def _format_currency(self, amount):
+        return format_indian_commas(amount)
