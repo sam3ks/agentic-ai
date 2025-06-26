@@ -349,8 +349,11 @@ REASON: [Brief explanation of your decision]
             # Ask loan amount with numeric check
             elif is_required_loan_amount:
                 while True:
-                    print(f"🤔 {question} (Please enter a numeric value)")
+                    print(f"🤔 {question} (Please enter a numeric value, or type 'stop' to exit)")
                     user_response = input("Your response: ").strip()
+                    if self._is_termination_request(user_response):
+                        print("You have chosen to exit. Exiting the process.")
+                        return "USER_EXIT"
                     if not user_response:
                         print("⚠️ Loan amount is required.")
                         continue
@@ -407,7 +410,12 @@ REASON: [Brief explanation of your decision]
             return f"An error occurred: {str(e)}"
  
     def run(self, question: str) -> str:
-        return self.handle_user_input(question)
+        response = self.handle_user_input(question)
+        if response == "USER_EXIT":
+            print("User exited the process.")
+            # Stop the agent chain or return a special result
+            return "USER_EXIT"
+        return response
 
     def _format_currency(self, amount):
         return format_indian_commas(amount)

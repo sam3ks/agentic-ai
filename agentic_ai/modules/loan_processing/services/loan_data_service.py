@@ -87,29 +87,19 @@ class LoanDataService:
         return df
 
     def get_user_data(self, identifier: str) -> Dict:
-        """Query user data by PAN or Aadhaar."""
+        """Query user data by PAN or Aadhaar, EXCLUDING credit score."""
         try:
-            # Clean identifier for comparison
             cleaned_identifier = identifier.strip()
-            
-            # Check for PAN first
             pan_mask = self.df['pan_number'] == cleaned_identifier
-            
-            # Then check for Aadhaar - try direct match first
             aadhaar_mask = self.df['aadhaar_number'] == cleaned_identifier
-            
-            # Combined mask
             mask = pan_mask | aadhaar_mask
             result = self.df[mask]
-            
             if not result.empty:
-                # Debug information about the match found
                 matched_row = result.iloc[0]
                 match_by = "PAN" if matched_row['pan_number'] == cleaned_identifier else "Aadhaar"
                 print(f"✓ Found existing user via {match_by}: {cleaned_identifier}")
             else:
                 print(f"⚠️ User not found in dataset: {cleaned_identifier}")
-            
             if result.empty:
                 user_data = {
                     "pan_number": cleaned_identifier if is_pan(cleaned_identifier) else None,
@@ -117,17 +107,15 @@ class LoanDataService:
                     "status": "new_user_found_proceed_to_salary_sheet"
                 }
                 return user_data
-            
             user_data = result.iloc[0].to_dict()
-            
+            # Remove credit_score from user_data if present
+            user_data.pop('credit_score', None)
             for key, value in user_data.items():
                 if pd.isna(value):
                     user_data[key] = None
                 elif hasattr(value, 'item'):
                     user_data[key] = value.item()
-            
             user_data["status"] = "existing_user_data_retrieved"
             return user_data
-            
         except Exception as e:
             return {"error": f"Query failed: {str(e)}"}

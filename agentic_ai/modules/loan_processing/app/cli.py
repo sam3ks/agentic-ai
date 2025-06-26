@@ -3,9 +3,9 @@ from agentic_ai.modules.loan_processing.orchestrator.loan_agent_orchestrator imp
 from agentic_ai.core.llm.factory import LLMFactory
 from agentic_ai.modules.loan_processing.agents.base_agent import BaseAgent
 
-def process_loan_application(user_request: str):
+def process_loan_application(user_request: str, automate_user: bool = False, customer_profile=None):
     """
-    Processes a single loan query.
+    Processes a single loan query. If automate_user is True, uses CustomerAgent to automate user input.
     """
     print("=" * 60)
     print("🏦 MULTI-AGENT LOAN PROCESSING SYSTEM")
@@ -19,7 +19,7 @@ def process_loan_application(user_request: str):
     llm = LLMFactory.get_llm()
     print("✓ LLM initialized successfully")
     
-    orchestrator = LoanAgentOrchestrator()
+    orchestrator = LoanAgentOrchestrator(automate_user=automate_user, customer_profile=customer_profile)
     
     print(f"\n{'='*60}")
     print("🔄 MULTI-AGENT PROCESSING...")

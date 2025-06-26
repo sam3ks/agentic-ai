@@ -1,4 +1,5 @@
 import json
+import requests
 from agentic_ai.core.agent.base_agent import BaseAgent
 from agentic_ai.modules.loan_processing.services.loan_data_service import LoanDataService
 from agentic_ai.core.utils.formatting import format_indian_commas
@@ -12,6 +13,20 @@ class DataQueryAgent(BaseAgent):
 
     def _format_currency(self, amount):
         return format_indian_commas(amount)
+
+    def fetch_credit_score_from_api(self, pan_number):
+        """Fetch credit score from external API."""
+        try:
+            response = requests.post(
+                "http://localhost:5001/get_credit_score",
+                json={"pan_number": pan_number},
+                timeout=5
+            )
+            if response.status_code == 200:
+                return response.json().get("credit_score")
+        except Exception as e:
+            print(f"[API ERROR] Credit score API call failed: {e}")
+        return None
 
     def query_user_data(self, query: str) -> str:
         """Queries user data with validation and processing."""
@@ -50,9 +65,29 @@ class DataQueryAgent(BaseAgent):
             print("🔍 DATA QUERY ANALYSIS")
             print(f"🪪 Identifier: {identifier}")
             print(f"💭 Thought: Retrieving and analyzing user data with identifier {identifier}...")
-            
             user_data = self.data_service.get_user_data(identifier)
-            
+
+            # --- API call for credit score ---
+            api_credit_score = None
+            if is_pan(identifier):
+                api_credit_score = self.fetch_credit_score_from_api(identifier)
+            elif is_aadhaar(identifier):
+                # Try fetching by Aadhaar if PAN is not used
+                try:
+                    response = requests.post(
+                        "http://localhost:5001/get_credit_score",
+                        json={"aadhaar_number": identifier},
+                        timeout=5
+                    )
+                    if response.status_code == 200:
+                        api_credit_score = response.json().get("credit_score")
+                except Exception as e:
+                    print(f"[API ERROR] Credit score API call by Aadhaar failed: {e}")
+            print(f"[API] Credit score for {identifier}: {api_credit_score}")
+            if api_credit_score is not None:
+                user_data['api_credit_score'] = api_credit_score
+            # --- end API call ---
+
             if "error" in user_data:
                 print(f"💭 Thought: No matching user found for identifier {identifier}. This appears to be a new user.")
                 print("=" * 50 + "\n")
@@ -60,22 +95,17 @@ class DataQueryAgent(BaseAgent):
             
             if user_data.get("status") == "existing_user_data_retrieved":
                 print(f"💭 Thought: Found existing user with identifier {identifier}. Analyzing their financial profile...")
-                
                 if 'city' in user_data:
                     del user_data['city']
-                
                 try:
                     monthly_salary = user_data.get('monthly_salary', 0)
-                    credit_score = user_data.get('credit_score', 0)
+                    credit_score = user_data.get('api_credit_score', 0)
                     existing_emi = user_data.get('existing_emi', 0)
-                    
                     credit_rating = "Excellent" if credit_score >= 750 else "Good" if credit_score >= 700 else "Fair" if credit_score >= 650 else "Poor"
                     affordability = "High" if monthly_salary > 75000 else "Medium" if monthly_salary > 40000 else "Limited"
-                    
                     print(f"💭 Thought: User has monthly salary of {self._format_currency(monthly_salary)}, credit score of {credit_score} ({credit_rating}), and existing EMI of {self._format_currency(existing_emi)}.")
                     print(f"💭 Thought: Based on income and existing obligations, affordability level is {affordability}.")
                     print("=" * 50 + "\n")
-                    
                     analysis = {
                         "user_data": user_data,
                         "financial_assessment": {
@@ -90,7 +120,6 @@ class DataQueryAgent(BaseAgent):
                         "instructions": "EXISTING USER: First ask if they want to update salary information. If they say NO, use this complete user_data object for RiskAssessment. If they say YES, use PDFSalaryExtractor first."
                     }
                     return json.dumps(analysis, indent=2)
-                    
                 except Exception as e:
                     return json.dumps({"user_data": user_data, "status": "data_retrieved", "info": f"Partial analysis due to error: {e}"}, indent=2)
             else:

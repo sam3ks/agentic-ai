@@ -68,6 +68,16 @@ class RiskAssessmentAgent(BaseAgent):
                 except ValueError:
                     pass
             
+            # FORCE EXTRACT credit score - most critical step
+            api_credit_score = None
+            # Enhanced regex pattern that's more tolerant of JSON formatting issues
+            api_credit_match = re.search(r'api_credit_score"?\s*:?\s*(\d+)', query)
+            if api_credit_match:
+                api_credit_score = int(api_credit_match.group(1))
+                print(f"⚠️ FOUND api_credit_score in query: {api_credit_score}")
+            else:
+                print("⚠️ WARNING: No api_credit_score found in query")
+            
             if '|' not in query:
                 if loan_amount:
                     # If we can extract a loan amount but no proper format,
@@ -96,22 +106,78 @@ class RiskAssessmentAgent(BaseAgent):
                     # Try to extract JSON from the string
                     user_data = extract_json_from_string(user_data_str)
                     if not user_data:
-                        return json.dumps({"error": f"Invalid JSON in user data: {str(e)}"})
+                        # If that fails, try a more aggressive approach with regex
+                        import re
+                        pattern = r'\{[^}]*\}'
+                        matches = re.findall(pattern, user_data_str)
+                        if matches:
+                            for potential_json in matches:
+                                try:
+                                    user_data = json.loads(potential_json)
+                                    break
+                                except:
+                                    continue
+                        
+                        if not user_data:
+                            return json.dumps({"error": f"Invalid JSON in user data: {str(e)}"})
             
             try:
                 loan_amount = float(loan_amount_str)
             except ValueError:
                 return json.dumps({"error": f"Invalid loan amount: {loan_amount_str}"})
 
+            # --- Patch: Ensure credit_score is set to api_credit_score if present ---
+            if isinstance(user_data, dict):
+                # Use the extracted api_credit_score from regex if it exists and not in user_data
+                if api_credit_score is not None and 'api_credit_score' not in user_data:
+                    user_data['api_credit_score'] = api_credit_score
+                
+                if 'api_credit_score' in user_data:
+                    user_data['credit_score'] = user_data['api_credit_score']
+                    # Also patch nested user_data if present
+                    if 'user_data' in user_data and isinstance(user_data['user_data'], dict):
+                        user_data['user_data']['credit_score'] = user_data['api_credit_score']
+            
             actual_user_data = user_data.get('user_data', user_data)
             monthly_salary = actual_user_data.get('monthly_salary', 0)
             existing_emi = actual_user_data.get('existing_emi', 0)
-            credit_score = actual_user_data.get('credit_score', 0)
+            
+            # EMERGENCY FIX: Force correct credit score by any means necessary
+            credit_score = 0
+            
+            # First priority: Use the regex-extracted credit score if available
+            if api_credit_score is not None:
+                print("⚠️ USING regex-extracted api_credit_score")
+                credit_score = api_credit_score
+            # Second priority: Check various places in the data structure
+            elif 'api_credit_score' in user_data:
+                credit_score = user_data['api_credit_score']
+                print(f"⚠️ USING api_credit_score from user_data: {credit_score}")
+            elif 'api_credit_score' in actual_user_data:
+                credit_score = actual_user_data['api_credit_score']
+                print(f"⚠️ USING api_credit_score from actual_user_data: {credit_score}")
+            # Last resort: Try to directly parse the query again with a more aggressive approach
+            else:
+                # Super aggressive pattern that will match any number following "api_credit_score" or "credit_score" 
+                last_resort_match = re.search(r'(?:api_credit_score|credit_score)[":]?\s*(\d+)', query)
+                if last_resort_match:
+                    credit_score = int(last_resort_match.group(1))
+                    print(f"⚠️ EMERGENCY EXTRACTION: Found credit score {credit_score} in query")
+                else:
+                    credit_score = actual_user_data.get('credit_score', 0)
+                    print(f"⚠️ NO CREDIT SCORE FOUND, defaulting to: {credit_score}")
+                
             composite_score = actual_user_data.get('composite_score', None)
 
             # Print a visual separator to highlight risk assessment
             print("\n" + "=" * 50)
             print("🔎 RISK ASSESSMENT ANALYSIS")
+            
+            # Add SAFETY CHECK to prevent credit score of 0 when we know it shouldn't be
+            if credit_score == 0 and api_credit_score is not None:
+                print("⚠️ EMERGENCY OVERRIDE: Fixing credit score to match extracted value")
+                credit_score = api_credit_score
+                
             print(f"💰 Monthly Income: {format_indian_commas(monthly_salary)} | 💳 Credit Score: {credit_score} | 📊 Existing EMI: {format_indian_commas(existing_emi)}")
             print(f"💭 Thought: Analyzing financial capacity for a loan request of {format_indian_commas(loan_amount)}...")
 
@@ -158,7 +224,7 @@ Based on this information, provide a risk assessment, overall decision (Approve/
 
             print("=" * 50 + "\n")
             
-            return json.dumps({
+            response = {
                 "loan_amount_requested": loan_amount,
                 "user_data_summary": {
                     "monthly_salary": monthly_salary,
@@ -167,7 +233,14 @@ Based on this information, provide a risk assessment, overall decision (Approve/
                 "llm_risk_assessment": llm_analysis,
                 "risk_category": risk_tier,
                 "status": "dynamic_risk_assessment_completed"
-            }, indent=2)
+            }
+            
+            # Final debug verification that credit score is correct
+            print(f"⚠️ Final credit score used in assessment: {credit_score}")
+            if api_credit_score is not None:
+                print(f"⚠️ Original api_credit_score: {api_credit_score}")
+                
+            return json.dumps(response, indent=2)
             
         except Exception as e:
             return json.dumps({"error": f"Risk assessment error: {str(e)}"})

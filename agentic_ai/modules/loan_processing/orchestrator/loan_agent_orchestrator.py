@@ -9,6 +9,7 @@ from agentic_ai.modules.loan_processing.agents.user_interaction import UserInter
 from agentic_ai.modules.loan_processing.agents.salary_sheet import SalarySheetGeneratorAgent, SalarySheetRetrieverAgent
 from agentic_ai.modules.loan_processing.agents.pdf_salary_extractor import PDFSalaryExtractorAgent
 from agentic_ai.modules.loan_processing.agents.loan_purpose_assessment import LoanPurposeAssessmentAgent
+from agentic_ai.modules.loan_processing.agents.customer_agent import CustomerAgent
 from agentic_ai.core.orchestrator.agent_executor_factory import create_agent_executor
 from agentic_ai.core.utils.parsing import parse_initial_user_request
 from agentic_ai.core.utils.formatting import format_indian_commas
@@ -16,12 +17,16 @@ from agentic_ai.core.utils.formatting import format_indian_commas
 class LoanAgentOrchestrator:
     """Orchestrates the loan processing workflow."""
 
-    def __init__(self):
+    def __init__(self, automate_user: bool = False, customer_profile=None):
         self.data_service = LoanDataService()
         self.data_agent = DataQueryAgent(self.data_service)
         self.geo_agent = GeoPolicyAgent()
         self.risk_agent = RiskAssessmentAgent()
-        self.interaction_agent = UserInteractionAgent() # Instantiated here
+        # Use CustomerAgent if automate_user is True, else UserInteractionAgent
+        if automate_user:
+            self.interaction_agent = CustomerAgent(profile=customer_profile)
+        else:
+            self.interaction_agent = UserInteractionAgent()
         self.salary_generator = SalarySheetGeneratorAgent()
         self.salary_retriever = SalarySheetRetrieverAgent()
         self.pdf_extractor = PDFSalaryExtractorAgent()
@@ -31,6 +36,31 @@ class LoanAgentOrchestrator:
         self.agent_executor = create_agent_executor(self.tools)
 
     def _setup_tools(self):
+        import json
+        def risk_assessment_wrapper(query):
+            # Only patch if input is in the expected format
+            if '|' in query:
+                user_data_str, loan_amount_str = query.split('|', 1)
+                user_data_str = user_data_str.strip()
+                loan_amount_str = loan_amount_str.strip()
+                try:
+                    user_data = json.loads(user_data_str)
+                except Exception:
+                    # Try to extract JSON from string if not valid
+                    import re
+                    match = re.search(r'\{.*\}', user_data_str)
+                    if match:
+                        user_data = json.loads(match.group(0))
+                    else:
+                        user_data = {}
+                # Patch: if api_credit_score present, set credit_score
+                if isinstance(user_data, dict) and 'api_credit_score' in user_data:
+                    user_data['credit_score'] = user_data['api_credit_score']
+                # Reconstruct input
+                new_query = f"{json.dumps(user_data)}|{loan_amount_str}"
+                return self.risk_agent.run(new_query)
+            else:
+                return self.risk_agent.run(query)
         return [
             Tool(
                 name="UserInteraction",
@@ -55,7 +85,7 @@ class LoanAgentOrchestrator:
             Tool(
                 name="RiskAssessment",
                 description="ONLY after GeoPolicyCheck is completed. Perform risk assessment. REQUIRED FORMAT: 'user_data_json|loan_amount' - The user_data_json must be the COMPLETE user data object from either: 1) DataQuery for existing users who don't want to update salary, 2) PDFSalaryExtractor's output if extraction was successful (use the 'user_data' field from the result), or 3) SalarySheetGenerator only if PDF extraction failed. NEVER skip PDF extraction results if successful.",
-                func=self.risk_agent.run
+                func=risk_assessment_wrapper
             ),
             Tool(
                 name="PDFSalaryExtractor",
