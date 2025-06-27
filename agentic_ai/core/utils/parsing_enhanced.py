@@ -4,7 +4,6 @@ import json
 import numpy as np
 import os
 from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
 from agentic_ai.core.config.constants import AVAILABLE_CITIES
 
 def load_loan_purpose_categories():
@@ -145,8 +144,7 @@ def find_best_matching_purpose_enhanced(user_input: str, model: SentenceTransfor
         
         # Check if input is closer to general conversation
         non_purpose_embeddings = model.encode(non_purpose_phrases)
-        # Compute cosine similarity properly
-        non_purpose_similarities = cosine_similarity(user_embedding, non_purpose_embeddings)[0]
+        non_purpose_similarities = np.dot(user_embedding, non_purpose_embeddings.T)[0]
         max_non_purpose_similarity = np.max(non_purpose_similarities)
         
         if max_non_purpose_similarity > 0.7:
@@ -156,8 +154,8 @@ def find_best_matching_purpose_enhanced(user_input: str, model: SentenceTransfor
         # Encode the enhanced purpose descriptions
         purpose_embeddings = model.encode(enhanced_purposes)
         
-        # Calculate cosine similarity properly
-        similarities = cosine_similarity(user_embedding, purpose_embeddings)[0]
+        # Calculate cosine similarity
+        similarities = np.dot(user_embedding, purpose_embeddings.T)[0]
         
         # Find top matches for debugging
         top_indices = np.argsort(similarities)[::-1][:5]
@@ -287,33 +285,13 @@ def parse_initial_user_request(user_input: str) -> dict:
     
     # If no exact match, try to extract any city-like word for further processing
     if not city_found:
-        # Look for words that might be cities - exclude common words that are not cities
-        common_non_city_words = {
-            'need', 'want', 'looking', 'hello', 'what', 'can', 'business', 'medical', 'planning',
-            'loan', 'money', 'funds', 'finance', 'credit', 'purchase', 'buy', 'home', 'car',
-            'education', 'travel', 'marriage', 'wedding', 'emergency', 'treatment', 'investment'
-        }
-        
-        # Find capitalized words that could be cities
+        # Look for words that might be cities
         words = re.findall(r'\b[A-Z][a-z]{3,}\b', user_input)
         if words:
             for word in words:
-                if word.lower() not in common_non_city_words:
-                    # Cities that aren't in our list will be handled by fuzzy matching later
-                    print(f"[DEBUG] Found potential city mention: {word}")
-                    loan_city = word  # This will be validated by the fuzzy matcher
-                    break
-        
-        # Additional check for lowercase city names with common prefixes
-        city_patterns = [r'\bin\s+([a-z]{4,})\b', r'\bfrom\s+([a-z]{4,})\b', r'\bat\s+([a-z]{4,})\b']
-        for pattern in city_patterns:
-            match = re.search(pattern, user_input, re.IGNORECASE)
-            if match and not city_found:
-                potential_city = match.group(1).title()
-                if potential_city.lower() not in common_non_city_words:
-                    print(f"[DEBUG] Found potential city from context: {potential_city}")
-                    loan_city = potential_city
-                    break
+                # Cities that aren't in our list will be handled by fuzzy matching later
+                print(f"[DEBUG] Found potential city mention: {word}")
+                loan_city = word  # This will be validated by the fuzzy matcher
 
     # Amount regex - keep using regex for this as it's more accurate for numeric extraction
     amount_match = re.search(r'(\d+(?:,\d+)*(?:\.\d+)?)\s*(lakhs?|million|crore|thousand|rs|rupees)?', user_input, re.IGNORECASE)

@@ -43,22 +43,138 @@ class LoanAgentOrchestrator:
                 user_data_str, loan_amount_str = query.split('|', 1)
                 user_data_str = user_data_str.strip()
                 loan_amount_str = loan_amount_str.strip()
+                
+                # Extract api_credit_score directly from the query string using multiple patterns
+                api_credit_score = None
+                extracted_scores = []
+                
+                # Pattern 1: Standard JSON format with quotes
+                pattern1 = re.search(r'"api_credit_score"\s*:\s*(\d+)', query)
+                if pattern1:
+                    score = int(pattern1.group(1))
+                    extracted_scores.append(("pattern1", score))
+                    api_credit_score = score
+                
+                # Pattern 2: JSON format without quotes
+                pattern2 = re.search(r'api_credit_score\s*:\s*(\d+)', query)
+                if pattern2 and not pattern1:  # Only use if pattern1 didn't match
+                    score = int(pattern2.group(1))
+                    extracted_scores.append(("pattern2", score))
+                    api_credit_score = score
+                
+                # Pattern 3: Super broad pattern as last resort
+                pattern3 = re.search(r'api_credit_score.*?(\d+)', query)
+                if pattern3 and not (pattern1 or pattern2):  # Only use if no other patterns matched
+                    score = int(pattern3.group(1))
+                    extracted_scores.append(("pattern3", score))
+                    api_credit_score = score
+                
+                if api_credit_score is not None:
+                    pass  # Credit score found and will be used
+                
+                # Parse user_data with multiple fallbacks
+                user_data = None
+                parse_methods = []
+                
+                # Method 1: Direct JSON parsing
                 try:
                     user_data = json.loads(user_data_str)
+                    parse_methods.append("direct_json_load")
                 except Exception:
-                    # Try to extract JSON from string if not valid
-                    import re
-                    match = re.search(r'\{.*\}', user_data_str)
-                    if match:
-                        user_data = json.loads(match.group(0))
-                    else:
+                    pass
+                
+                # Method 2: Extract JSON using regex if Method 1 failed
+                if user_data is None:
+                    try:
+                        match = re.search(r'\{.*\}', user_data_str)
+                        if match:
+                            try:
+                                user_data = json.loads(match.group(0))
+                                parse_methods.append("regex_json_extract")
+                            except:
+                                pass
+                    except:
+                        pass
+                
+                # Method 3: Build object from key-value pairs if Methods 1-2 failed
+                if user_data is None:
+                    try:
                         user_data = {}
-                # Patch: if api_credit_score present, set credit_score
-                if isinstance(user_data, dict) and 'api_credit_score' in user_data:
+                        parse_methods.append("key_value_parsing")
+                        # Parse key-value pairs directly from the string
+                        for pair in user_data_str.split(','):
+                            if ':' in pair:
+                                key, value = pair.split(':', 1)
+                                key = key.strip().strip('"').strip("'")
+                                value = value.strip().strip('"').strip("'")
+                                try:
+                                    # Try to convert to appropriate type
+                                    if value.isdigit():
+                                        value = int(value)
+                                    elif value.replace('.', '', 1).isdigit():
+                                        value = float(value)
+                                    user_data[key] = value
+                                except:
+                                    pass
+                    except:
+                        pass
+                
+                # If all methods failed, create an empty dict
+                if user_data is None:
+                    user_data = {}
+                    parse_methods.append("empty_dict_fallback")
+                
+                # Process user data parsing results
+                
+                # GUARANTEED FIX: Ensure user_data is a dict, even if nested
+                if isinstance(user_data, dict) and 'user_data' in user_data and isinstance(user_data['user_data'], dict):
+                    # Also patch the nested user_data
+                    if api_credit_score is not None:
+                        user_data['user_data']['credit_score'] = api_credit_score
+                        user_data['user_data']['api_credit_score'] = api_credit_score
+                
+                # GUARANTEED FIX: Override with api_credit_score if we found it
+                if api_credit_score is not None:
+                    user_data['credit_score'] = api_credit_score
+                    user_data['api_credit_score'] = api_credit_score
+                elif isinstance(user_data, dict) and 'api_credit_score' in user_data:
                     user_data['credit_score'] = user_data['api_credit_score']
-                # Reconstruct input
+                
+                # Force all levels to have the credit score
+                if isinstance(user_data, dict):
+                    if 'user_data' in user_data and isinstance(user_data['user_data'], dict):
+                        # Make sure nested structure has credit_score
+                        if 'api_credit_score' in user_data:
+                            user_data['user_data']['api_credit_score'] = user_data['api_credit_score']
+                            user_data['user_data']['credit_score'] = user_data['api_credit_score']
+                        elif 'credit_score' in user_data:
+                            user_data['user_data']['credit_score'] = user_data['credit_score']
+                
+                # Add debug fields to track what happened in orchestrator
+                user_data['_debug_orchestrator'] = {
+                    'extracted_scores': extracted_scores,
+                    'parse_methods': parse_methods,
+                    'api_credit_score': api_credit_score
+                }
+                
+                # Reconstruct input with fixed user_data
                 new_query = f"{json.dumps(user_data)}|{loan_amount_str}"
-                return self.risk_agent.run(new_query)
+                result = self.risk_agent.run(new_query)
+                
+                # FINAL VERIFICATION: Parse the risk assessment result and verify credit score
+                try:
+                    result_obj = json.loads(result)
+                    if 'user_data_summary' in result_obj and 'credit_score' in result_obj['user_data_summary']:
+                        final_credit_score = result_obj['user_data_summary']['credit_score']
+                        
+                        # If there's still a problem with the credit score (it's 0 when it shouldn't be)
+                        if final_credit_score == 0 and api_credit_score is not None and api_credit_score > 0:
+                            result_obj['user_data_summary']['credit_score'] = api_credit_score
+                            result = json.dumps(result_obj, indent=2)
+                except Exception as e:
+                    pass
+                
+                return result
             else:
                 return self.risk_agent.run(query)
         return [
@@ -84,7 +200,7 @@ class LoanAgentOrchestrator:
             ),
             Tool(
                 name="RiskAssessment",
-                description="ONLY after GeoPolicyCheck is completed. Perform risk assessment. REQUIRED FORMAT: 'user_data_json|loan_amount' - The user_data_json must be the COMPLETE user data object from either: 1) DataQuery for existing users who don't want to update salary, 2) PDFSalaryExtractor's output if extraction was successful (use the 'user_data' field from the result), or 3) SalarySheetGenerator only if PDF extraction failed. NEVER skip PDF extraction results if successful.",
+                description="**MANDATORY STEP** - ALWAYS run this after GeoPolicyCheck. This is the final and most important assessment tool. Perform comprehensive risk assessment. REQUIRED FORMAT: 'user_data_json|loan_amount' - The user_data_json must be the COMPLETE user data object from either: 1) DataQuery for existing users who don't want to update salary, 2) PDFSalaryExtractor's output if extraction was successful (use the 'user_data' field from the result), or 3) SalarySheetGenerator only if PDF extraction failed. NEVER skip this tool regardless of GeoPolicyCheck results.",
                 func=risk_assessment_wrapper
             ),
             Tool(
@@ -111,7 +227,6 @@ class LoanAgentOrchestrator:
         if 'amount' in initial_loan_details and initial_loan_details['amount']:
             formatted_amount = format_indian_commas(initial_loan_details['amount'])
             # Replace all international formatted numbers in user_input with Indian format
-            import re
             user_input = re.sub(r"(\d{1,3}(?:,\d{3})+|\d{7,})", formatted_amount, user_input)
         else:
             formatted_amount = None
@@ -127,9 +242,15 @@ class LoanAgentOrchestrator:
         prompt_parts = [f'LOAN APPLICATION REQUEST: "{user_input}"\n']
         prompt_parts.append("CRITICAL INSTRUCTIONS - FOLLOW THIS SEQUENCE:")
 
-        if initial_loan_details.get("purpose", "unknown") == "unknown":
+        # Always check purpose first, regardless of initial parsing
+        purpose_from_parsing = initial_loan_details.get("purpose", "unknown")
+        if purpose_from_parsing in ["unknown", "not_detected"]:
             prompt_parts.append("1. Ask for loan purpose using UserInteraction.")
-        prompt_parts.append("2. ALWAYS submit the purpose to LoanPurposeAssessment to evaluate eligibility.")
+            prompt_parts.append("2. ALWAYS submit the received purpose to LoanPurposeAssessment to evaluate eligibility.")
+        else:
+            prompt_parts.append(f"1. The loan purpose '{purpose_from_parsing}' was detected from the initial request.")
+            prompt_parts.append("2. ALWAYS submit this purpose to LoanPurposeAssessment to evaluate eligibility.")
+        
         prompt_parts.append("   - If purpose is 'prohibited' (eligibility), stop processing and inform user.")
         prompt_parts.append("   - If purpose is 'conditionally_permitted', explain the conditions from policy_details.")
         prompt_parts.append("   - Only continue if purpose is 'permitted' or conditions are met.")
@@ -162,9 +283,20 @@ class LoanAgentOrchestrator:
             prompt_parts.append("7. Ask for city using UserInteraction.")
 
         prompt_parts.append("8. Run GeoPolicyCheck with format: city:CITY,purpose:PURPOSE,amount:AMOUNT.")
-        prompt_parts.append("9. Run RiskAssessment with user data and amount.")
+        prompt_parts.append("9. **MANDATORY**: Run RiskAssessment with user data and amount - DO NOT SKIP THIS STEP.")
         prompt_parts.append("10. Make a final decision combining LoanPurposeAssessment, GeoPolicyCheck, and RiskAssessment.")
-        prompt_parts.append("\nDO NOT SKIP ANY STEP OR CHANGE THE ORDER.")
+        prompt_parts.append("\nCRITICAL: NEVER STOP EARLY - You must complete ALL steps including RiskAssessment before making the final decision.")
+        prompt_parts.append("Even if GeoPolicyCheck shows conditions, you MUST still run RiskAssessment to get the complete picture.")
+        prompt_parts.append("\nDO NOT SKIP ANY STEP OR CHANGE THE ORDER. NEVER STOP EARLY - ALWAYS COMPLETE ALL STEPS.")
+
+        prompt_parts.append("8. Run GeoPolicyCheck with format: city:CITY,purpose:PURPOSE,amount:AMOUNT.")
+        prompt_parts.append("9. **MANDATORY**: Run RiskAssessment with user data and amount - DO NOT SKIP THIS STEP.")
+        prompt_parts.append("10. Make a final decision combining LoanPurposeAssessment, GeoPolicyCheck, and RiskAssessment.")
+        prompt_parts.append(
+            "\nOnce all steps are completed, respond with the final decision and stop processing. "
+            "Do not repeat steps or wait for further instructions after the final response."
+        )
+
 
         coordination_prompt = "\n".join(prompt_parts)
 
@@ -186,7 +318,6 @@ class LoanAgentOrchestrator:
 """
 
     def _format_final_response(self, text: str) -> str:
-        import re
         def replace_with_indian_commas(match):
             num = int(match.group(0).replace(",", ""))
             return format_indian_commas(num)

@@ -1,3 +1,4 @@
+#pdf_salary_extractor.py
 from agentic_ai.core.agent.base_agent import BaseAgent
 from agentic_ai.modules.loan_processing.services.pdf_parser import PDFSalaryParser
 import json
@@ -26,6 +27,7 @@ class PDFSalaryExtractorAgent(BaseAgent):
         # CRITICAL FIX: Clean the input string to extract just the file path
         # First, strip quotes
         file_path = file_path.strip().strip('"').strip("'")
+        file_path = os.path.basename(file_path)  # Get just the filename if it's a full path
         # If there are newlines, only take the first line (the actual path)
         if '\n' in file_path:
             file_path = file_path.split('\n')[0].strip()
@@ -56,7 +58,6 @@ class PDFSalaryExtractorAgent(BaseAgent):
                 break
                 
         if not file_found:
-            # Try a more aggressive search in the project directory
             print(f"[DEBUG] File not found in expected locations, searching in project directories...")
             try:
                 # Get the project root directory
@@ -90,7 +91,6 @@ class PDFSalaryExtractorAgent(BaseAgent):
                 print(f"[DEBUG] Error during extended file search: {str(e)}")
                 
         if not file_found:
-            # Try to print directory listing for debugging
             parent_dir = os.path.dirname(file_path)
             print(f"[DEBUG] Directory listing for {parent_dir}:")
             try:
@@ -105,6 +105,7 @@ class PDFSalaryExtractorAgent(BaseAgent):
                 file_path = text_file_path
                 file_found = True
             else:
+                print(f"WARNING: File does not exist at provided path , exploring alternatives...")
                 return json.dumps({
                     "error": f"File not found: {file_path}. Please provide a valid path to a PDF file.",
                     "debug_cwd": os.getcwd(),

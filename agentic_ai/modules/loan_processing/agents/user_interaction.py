@@ -221,12 +221,11 @@ REASON: [Brief explanation of your decision]
         
         # If a loan purpose was extracted, mark it as already asked but DON'T validate
         # This allows the purpose to be passed directly to LoanPurposeAssessmentAgent
-        if details.get("purpose") and details["purpose"] not in ["unknown", "need", "want"]:
+        if details.get("purpose") and details["purpose"] not in ["unknown", "need", "want", "not_detected"]:
             print(f"[DEBUG] Initial purpose detected: '{details['purpose']}' - will be evaluated by LoanPurposeAssessmentAgent")
             self._asked_purpose = True
         else:
-            print(f"[DEBUG] No valid initial purpose found, got: '{details.get('purpose', 'None')}'")
-        
+            print(f"[DEBUG] No valid initial purpose found, got: '{details.get('purpose', 'None')}' - will need to ask user")
         if details.get("amount") and details["amount"] > 0:
             # Import formatting utility
             from agentic_ai.core.utils.formatting import format_indian_currency_without_decimal
@@ -265,7 +264,7 @@ REASON: [Brief explanation of your decision]
             is_pdf_path_query = "pdf" in question.lower() or "salary slip" in question.lower() or "path" in question.lower()
  
             # Return existing known values if valid
-            if is_required_loan_purpose and self.initial_details.get("purpose") and self.initial_details["purpose"] not in ["unknown", "need", "want"]:
+            if is_required_loan_purpose and self.initial_details.get("purpose") and self.initial_details["purpose"] not in ["unknown", "need", "want", "not_detected"]:
                 print(f"[DEBUG] Found existing purpose in initial_details: '{self.initial_details['purpose']}'")
                 # Trust the purpose from initial_details without additional validation
                 # This will allow it to be checked by the LoanPurposeAssessmentAgent instead

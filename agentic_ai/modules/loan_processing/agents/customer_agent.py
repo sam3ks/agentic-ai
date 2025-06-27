@@ -1,24 +1,29 @@
 import random
+import os
 from agentic_ai.core.agent.base_agent import BaseAgent
 
 class CustomerAgent(BaseAgent):
     """
-    Automated agent that mimics a user by providing required details (purpose, amount, city, PAN/Aadhaar)
-    to the loan processing workflow. Useful for automation, testing, and demos.
+    Automated agent that mimics a user by providing required details
+    (purpose, amount, city, PAN/Aadhaar) for loan processing workflows.
+    Useful for automation, testing, and demos.
+    Now enhanced to mimic real human quirks.
     """
-    
-    def __init__(self, profile=None):
-        super().__init__()
-        # Default or custom profile for the customer
-        self.profile = profile or self._generate_random_profile()
-        self.step = 0  # Track which info to provide next
 
-    def _generate_random_profile(self):
-        # Generate a random but valid customer profile
+    def __init__(self, profile: dict = None, pdf_path: str = None):
+        super().__init__()
+        self.profile = profile or self._generate_random_profile()
+        self.step = 0
+        self.pdf_path = pdf_path or os.path.join(os.getcwd(), "sample_salary_template.pdf")
+        self._memory = {}
+        self.reset_state()
+        
+
+    def _generate_random_profile(self) -> dict:
         purposes = ["home renovation", "education", "wedding", "business expansion", "medical"]
         cities = ["Mumbai", "Delhi", "Bangalore", "Chennai", "Kolkata"]
-        pan_numbers = ["ABCDE1234F", "FGHIJ5678K", "KLMNO9012P", "AASIL9982X" ,"OHWQG0796D", "JPYVM1461B"]
-        aadhaar_numbers = ["123456789012", "234567890123", "345678901234","503153508818","347676851687","776849406520"]
+        pan_numbers = ["ABCDE1234F", "FGHIJ5678K", "KLMNO9012P", "AASIL9982X", "OHWQG0796D", "JPYVM1461B"]
+        aadhaar_numbers = ["123456789012", "234567890123", "345678901234", "503153508818", "347676851687", "776849406520"]
         return {
             "purpose": random.choice(purposes),
             "amount": str(random.choice([100000, 250000, 500000, 750000, 1000000])),
@@ -26,78 +31,107 @@ class CustomerAgent(BaseAgent):
             "identifier": random.choice(pan_numbers + aadhaar_numbers)
         }
 
-    def reset_state(self):
-        """Resets the state of the agent (for compatibility with orchestrator)."""
+    def reset_state(self) -> None:
         self.step = 0
-        self._answered_purpose = False
-        self._answered_amount = False
-        self._answered_city = False
-        self._answered_identifier = False
-        self._answered_salary_update = False
-        self._answered_pdf_path = False
+        self._answered = {}
         self._last_salary_update_response = None
+        self._memory.clear()
+        self._num_tries = {}
+
+    def _fuzzy_typo(self, value: str) -> str:
+        # Simulate a typo in city names or amounts
+        if random.random() < 0.08 and value.lower() == "bangalore":
+            return "Bangaluru"
+        if random.random() < 0.1 and value.isdigit():
+            return f"{int(value):,}"  # Format as 1,00,000
+        return value
+
+    def _maybe_smalltalk(self):
+        responses = [
+            "",  # Usually says nothing extra
+            "Sure, one moment.",
+            "Let me check.",
+            "Yeah, I can help with that.",
+            "Is this for home loan or something else?",
+        ]
+        return random.choice(responses) if random.random() < 0.15 else ""
 
     def run(self, question: str = None, **kwargs) -> str:
-        """Responds to the system's questions as a user would (compatible signature)."""
-        q = (question or "").lower()
-        # Handle salary update prompt
-        if ("update" in q and "salary" in q) or ("want to update" in q and "salary" in q):
-            if not getattr(self, '_answered_salary_update', False):
-                self._answered_salary_update = True
-                # Randomly decide yes/no, or always yes for demo
-                self._last_salary_update_response = random.choice(["yes", "no"])
-                return self._last_salary_update_response
-            else:
-                return self._last_salary_update_response or "yes"
-        # Handle PDF path prompt
-        if ("pdf" in q or "salary slip" in q or "file path" in q or "document" in q or "provide the path" in q):
-            if not getattr(self, '_answered_pdf_path', False):
-                self._answered_pdf_path = True
-                return r"C:\Users\R.Darshan\Downloads\Agentic_AI_main_v8 (1)\Agentic_AI_main_v8\Agentic_AI_main_v5\agentic-ai-main\agentic_ai\sample_salarypdf_template.pdf"
-            else:
-                return r"C:\Users\R.Darshan\Downloads\Agentic_AI_main_v8 (1)\Agentic_AI_main_v8\Agentic_AI_main_v5\agentic-ai-main\agentic_ai\sample_salarypdf_template.pdf"
-        # Handle PAN/Aadhaar
-        if "pan" in q or "aadhaar" in q or "identifier" in q:
-            if not getattr(self, '_answered_identifier', False):
-                self._answered_identifier = True
-                return self.profile.get("identifier", "ABCDE1234F")
-            else:
-                return self.profile.get("identifier", "ABCDE1234F")
-        # Handle purpose (always return the same purpose for the session)
+        q = (question or "").lower().strip()
+        resp = None
+        # Small talk sometimes
+        prefix = self._maybe_smalltalk()
+
+        # Handle remembering how many times a question is asked
+        if q not in self._num_tries:
+            self._num_tries[q] = 1
+        else:
+            self._num_tries[q] += 1
+
+        # Sometimes return "I already gave you that" on repeated asks
+        if self._num_tries[q] > 2 and random.random() < 0.3:
+            return prefix + " I already shared that info."
+
+        # Simulate clarifying questions
+        if "salary" in q and "update" in q and random.random() < 0.1:
+            return prefix + " Sorry, do you mean my current employer's salary slip?"
+
+        # Purpose
         if "purpose" in q:
-            return self.profile.get("purpose", "personal expenses")
-        # Handle amount
-        if "amount" in q:
-            if not getattr(self, '_answered_amount', False):
-                self._answered_amount = True
-                return self.profile.get("amount", "100000")
+            if random.random() < 0.2:
+                resp = "It's for my house."  # Vague
             else:
-                return self.profile.get("amount", "100000")
-        # Handle city
-        if "city" in q:
-            if not getattr(self, '_answered_city', False):
-                self._answered_city = True
-                return self.profile.get("city", "Mumbai")
+                resp = self.profile["purpose"]
+
+        # Amount (sometimes use formatted)
+        elif "amount" in q:
+            val = self.profile["amount"]
+            resp = self._fuzzy_typo(val)
+
+        # City (simulate typo sometimes)
+        elif "city" in q:
+            resp = self._fuzzy_typo(self.profile["city"])
+
+        # PAN/Aadhaar (sometimes typo, sometimes refuse)
+        elif any(k in q for k in ["pan", "aadhaar", "identifier"]):
+            if random.random() < 0.1:
+                resp = "Can I give that later?"
             else:
-                return self.profile.get("city", "Mumbai")
-        # Default: return a random value
-        return random.choice(list(self.profile.values()))
-    
-    def set_initial_details(self, details: dict):
-        """Sets the initial details extracted from the user's first message (for compatibility).
-        Ensures the agent's profile matches the initial request for consistency."""
-        if not self.profile:
-            self.profile = {}
-        # Always override profile with initial details if present and valid
+                resp = self.profile["identifier"]
+
+        # Salary update (sometimes hesitate/change answer)
+        elif "update" in q and "salary" in q:
+            if self._last_salary_update_response is None or random.random() < 0.2:
+                self._last_salary_update_response = random.choice(["yes", "no"])
+            resp = self._last_salary_update_response
+
+        # PDF path (sometimes typo in path)
+        elif any(k in q for k in ["pdf", "salary slip", "file path", "document", "provide the path"]):
+            if random.random() < 0.1:
+                resp = self.pdf_path.replace("sample_salary_template", "sample_slary_tmplate")  # typo
+            else:
+                resp = self.pdf_path
+
+        # Sometimes answer out of order
+        elif random.random() < 0.12:
+            resp = random.choice([self.profile["purpose"], self.profile["amount"], self.profile["city"]])
+
+        else:
+            resp = random.choice(list(self.profile.values()))
+
+        # Occasionally forget and need to be reminded
+        if resp and random.random() < 0.05:
+            return prefix + " Sorry, can you repeat the question?"
+
+        return prefix + " " + resp if prefix else resp
+
+    def set_initial_details(self, details: dict) -> None:
         for k in ("purpose", "amount", "city"):
             v = (details or {}).get(k)
             if v and v != "unknown":
                 self.profile[k] = v
-        # Identifier is not always in the initial request, so keep as is if not present
         if "identifier" in details:
             self.profile["identifier"] = details["identifier"]
 
     def handle_user_input(self, question: str) -> str:
-        """Handles user interaction by mimicking user input for automation."""
-        # This agent does not prompt, it just returns the appropriate value
         return self.run(question)

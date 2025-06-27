@@ -69,7 +69,7 @@
 "notes": "Margin funding is allowed only via regulated brokers; not via personal loans",
 "policy_ref": "RBI Guidelines on Consumer Credit Risk Management"
 },
-"debt consolidation": {
+"personal_finance": {
 "eligibility": "permitted",
 "category": "personal_financial_restructuring",
 "requirement": "Proof of existing liabilities required",
@@ -89,5 +89,19 @@
 "reason": "Involves activities that are unlawful or criminal in nature",
 "notes": "Loan applications related to illegal businesses, trafficking, terrorism financing, or other criminal enterprises are strictly prohibited",
 "policy_ref": "RBI AML Guidelines & Prevention of Money Laundering Act (PMLA), 2002"
+},
+"miscellaneous": {
+  "eligibility": "conditionally_permitted",
+  "category": "general_personal_loan",
+  "requirement": "Requires income proof and clear explanation of use",
+  "notes": "Used when the borrower’s intent does not fall into a specific predefined category. Requires manual review or further clarification.",
+  "policy_ref": "Internal Lending Policy - General Unsecured Loans"
+},
+"not_detected": {
+  "eligibility": "manual_review",
+  "category": "undetermined",
+  "requirement": "User must clarify intent",
+  "notes": "Initial query was ambiguous or unrelated to known purposes",
+  "policy_ref": "Intent Classification Fallback Policy v1.0"
 }
 }

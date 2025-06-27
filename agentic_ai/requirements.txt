@@ -8,3 +8,5 @@ click
 requests
 PyPDF2
 openai
+sentence-transformers
+flask
