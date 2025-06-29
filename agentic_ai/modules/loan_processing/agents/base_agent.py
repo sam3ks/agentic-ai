@@ -1,5 +1,5 @@
 import re
-from agentic_ai.core.utils.formatting import format_indian_commas
+from agentic_ai.core.utils.formatting import format_indian_commas, format_indian_currency_without_decimal
 
 
 class BaseAgent:
@@ -21,11 +21,11 @@ class BaseAgent:
 
     def postprocess_output(self, text: str) -> str:
         # Replace all international formatted numbers (with or without rupee symbol) with Indian comma style
-        def replace_with_indian_commas(match):
+        def replace_with_indian_currency(match):
             num = int(match.group(1).replace(",", ""))
-            return f"₹{format_indian_commas(num)}" if match.group(0).startswith("₹") else format_indian_commas(num)
+            return format_indian_currency_without_decimal(num)
 
         # Replace patterns like ₹12,345,678 or 12,345,678
-        text = re.sub(r"₹?(\d{1,3}(?:,\d{3})+|\d{7,})", replace_with_indian_commas, text)
+        text = re.sub(r"₹?(\d{1,3}(?:,\d{3})+|\d{7,})", replace_with_indian_currency, text)
         return text
 

@@ -1,4 +1,3 @@
-#pdf_salary_extractor.py
 from agentic_ai.core.agent.base_agent import BaseAgent
 from agentic_ai.modules.loan_processing.services.pdf_parser import PDFSalaryParser
 import json

@@ -205,7 +205,7 @@ You are a senior loan policy officer. Make a geographic policy decision for this
 
 City: {city}
 Loan Purpose: {purpose}{category_info}
-Loan Amount: ₹{amount:,.2f}
+Loan Amount: {format_indian_currency_without_decimal(amount)}
 
 Please evaluate if this loan should proceed based on geographical policy considerations.
 Your decision should weigh:
