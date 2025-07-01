@@ -1,19 +1,20 @@
+#dataquery
 import json
 import requests
 from agentic_ai.core.agent.base_agent import BaseAgent
 from agentic_ai.modules.loan_processing.services.loan_data_service import LoanDataService
 from agentic_ai.core.utils.formatting import format_indian_commas
-
+ 
 class DataQueryAgent(BaseAgent):
     """Specialized agent for data querying."""
-
+ 
     def __init__(self, data_service: LoanDataService):
         super().__init__()
         self.data_service = data_service
-
+ 
     def _format_currency(self, amount):
         return format_indian_commas(amount)
-
+ 
     def fetch_credit_score_from_api(self, pan_number):
         """Fetch credit score from external API."""
         try:
@@ -27,23 +28,23 @@ class DataQueryAgent(BaseAgent):
         except Exception as e:
             print(f"[API ERROR] Credit score API call failed: {e}")
         return None
-
+ 
     def query_user_data(self, query: str) -> str:
-        """Queries user data with validation and processing."""
+        """Queries user data with Aadhaar for details and PAN for credit score only."""
         try:
-            # First, try direct validation without using LLM
             from agentic_ai.core.utils.validators import is_pan, is_aadhaar
-            
-            # Clean input to avoid any leading/trailing whitespace
             clean_query = query.strip()
-            
-            # Check if the cleaned input is directly a valid PAN or Aadhaar
-            if is_pan(clean_query) or is_aadhaar(clean_query):
-                identifier = clean_query
+            identifier = None
+            aadhaar = None
+            pan = None
+ 
+            # Extract identifier
+            if is_pan(clean_query):
+                pan = clean_query
+            elif is_aadhaar(clean_query):
+                aadhaar = clean_query
             else:
-                # If direct validation fails, try LLM-based extraction
-                validation_prompt = f"""Extract PAN or Aadhaar from: \"{query}\"\n\nPAN format: 5 letters + 4 digits + 1 letter (e.g., ABCDE1234F)\nAadhaar format: 12 digits (e.g., 123456789012)\n\nReturn only the identifier, nothing else. If neither is found, return \"N/A\"."""
-                
+                validation_prompt = f'''Extract PAN or Aadhaar from: "{query}"\n\nPAN format: 5 letters + 4 digits + 1 letter (e.g., ABCDE1234F)\nAadhaar format: 12 digits (e.g., 123456789012)\n\nReturn only the identifier, nothing else. If neither is found, return "N/A".'''
                 try:
                     identifier = self.llm._call(validation_prompt).strip()
                     print(f"[DEBUG] Extracted identifier from LLM: {identifier}")
@@ -54,47 +55,45 @@ class DataQueryAgent(BaseAgent):
                     identifier = clean_query
                     if identifier.startswith('identifier:'):
                         identifier = identifier.split(':', 1)[1].strip()
-
-            # Final validation before proceeding (enforced regardless of LLM output)
-            if not (is_pan(identifier) or is_aadhaar(identifier)):
-                print(f"[DEBUG] Identifier '{identifier}' is not a valid PAN or Aadhaar. Aborting.")
-                return json.dumps({"error": "No valid PAN or Aadhaar found in the query."})
-
-            # Print a visual separator to highlight data query process
-            print("\n" + "=" * 50)
-            print("🔍 DATA QUERY ANALYSIS")
-            print(f"🪪 Identifier: {identifier}")
-            print(f"💭 Thought: Retrieving and analyzing user data with identifier {identifier}...")
-            user_data = self.data_service.get_user_data(identifier)
-
+                if is_pan(identifier):
+                    pan = identifier
+                elif is_aadhaar(identifier):
+                    aadhaar = identifier
+ 
+            # If only PAN is provided, look up Aadhaar using PAN
+            if pan and not aadhaar:
+                # Find Aadhaar linked to this PAN
+                user_row = self.data_service.df[self.data_service.df['pan_number'] == pan]
+                if not user_row.empty:
+                    aadhaar = user_row.iloc[0]['aadhaar_number']
+                else:
+                    return json.dumps({"error": "PAN not found in records. Cannot fetch user details."})
+ 
+            # If only Aadhaar is provided, use it
+            if aadhaar:
+                user_data = self.data_service.get_user_data(aadhaar)
+            else:
+                return json.dumps({"error": "No valid Aadhaar found for user data lookup."})
+ 
             # --- API call for credit score ---
             api_credit_score = None
-            if is_pan(identifier):
-                api_credit_score = self.fetch_credit_score_from_api(identifier)
-            elif is_aadhaar(identifier):
-                # Try fetching by Aadhaar if PAN is not used
-                try:
-                    response = requests.post(
-                        "http://localhost:5001/get_credit_score",
-                        json={"aadhaar_number": identifier},
-                        timeout=5
-                    )
-                    if response.status_code == 200:
-                        api_credit_score = response.json().get("credit_score")
-                except Exception as e:
-                    print(f"[API ERROR] Credit score API call by Aadhaar failed: {e}")
-            print(f"[API] Credit score for {identifier}: {api_credit_score}")
+            if pan:
+                api_credit_score = self.fetch_credit_score_from_api(pan)
+                print(f"[API] Credit score for PAN {pan}: {api_credit_score}")
+            else:
+                print(f"[INFO] No PAN provided. Credit score cannot be fetched.")
+                api_credit_score = 0
             if api_credit_score is not None:
                 user_data['api_credit_score'] = api_credit_score
             # --- end API call ---
-
+ 
             if "error" in user_data:
-                print(f"💭 Thought: No matching user found for identifier {identifier}. This appears to be a new user.")
+                print(f"💭 Thought: No matching user found for Aadhaar {aadhaar}. This appears to be a new user.")
                 print("=" * 50 + "\n")
                 return json.dumps(user_data)
-            
+ 
             if user_data.get("status") == "existing_user_data_retrieved":
-                print(f"💭 Thought: Found existing user with identifier {identifier}. Analyzing their financial profile...")
+                print(f"💭 Thought: Found existing user with Aadhaar {aadhaar}. Analyzing their financial profile...")
                 if 'city' in user_data:
                     del user_data['city']
                 try:
@@ -124,10 +123,11 @@ class DataQueryAgent(BaseAgent):
                     return json.dumps({"user_data": user_data, "status": "data_retrieved", "info": f"Partial analysis due to error: {e}"}, indent=2)
             else:
                 return json.dumps(user_data, indent=2)
-                
         except Exception as e:
             return json.dumps({"error": f"Data query error: {str(e)}"})
-
+ 
     def run(self, query: str) -> str:
         """Runs the agent's specific task."""
         return self.query_user_data(query)
+ 
+ 

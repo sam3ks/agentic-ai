@@ -20,13 +20,38 @@ class CustomerAgent(BaseAgent):
         # Generate a random but valid customer profile
         purposes = ["home renovation", "education", "wedding", "business expansion", "medical"]
         cities = ["Mumbai", "Delhi", "Bangalore", "Chennai", "Kolkata"]
-        pan_numbers = ["ABCDE1234F", "FGHIJ5678K", "KLMNO9012P", "AASIL9982X" ,"OHWQG0796D", "JPYVM1461B"]
-        aadhaar_numbers = ["123456789012", "234567890123", "345678901234","503153508818","347676851687","776849406520"]
+        
+        # Create paired PAN and Aadhaar numbers (from the ACTUAL dataset)
+        user_profiles = [
+            {"pan": "NAMWT4886W", "aadhaar": "631999289535"},
+            {"pan": "AASIL9982X", "aadhaar": "263955468941"},
+            {"pan": "OHWQG0796D", "aadhaar": "216563686675"},
+            {"pan": "DVNFN2660N", "aadhaar": "747356461632"},
+            {"pan": "RFFRX8893L", "aadhaar": "96193980326"},
+            {"pan": "TFVIQ8661A", "aadhaar": "467580848845"},
+            {"pan": "JOZFF9522G", "aadhaar": "246535477153"},
+            {"pan": "GBFLY6345U", "aadhaar": "503153508818"},
+            {"pan": "AOGGX0057V", "aadhaar": "347676851687"},
+            {"pan": "VNUTM3387Y", "aadhaar": "776849406520"},
+            {"pan": "PKHCY6517J", "aadhaar": "960716235487"},
+            {"pan": "AJTHJ4957H", "aadhaar": "225812783128"},
+            {"pan": "JPYVM1461B", "aadhaar": "324444958446"}
+        ]
+        
+        # Select a random user profile
+        selected_profile = random.choice(user_profiles)
+        
+        # FOR TESTING AADHAAR-FIRST FLOW: Always use Aadhaar as the initial identifier
+        # This will force the system to ask for PAN later for credit score verification
+        identifier = selected_profile["aadhaar"]  # Always start with Aadhaar
+        
         return {
             "purpose": random.choice(purposes),
             "amount": str(random.choice([100000, 250000, 500000, 750000, 1000000])),
             "city": random.choice(cities),
-            "identifier": random.choice(pan_numbers + aadhaar_numbers)
+            "identifier": identifier,
+            "pan": selected_profile["pan"],
+            "aadhaar": selected_profile["aadhaar"]
         }
 
     def reset_state(self):
@@ -39,6 +64,7 @@ class CustomerAgent(BaseAgent):
         self._answered_salary_update = False
         self._answered_pdf_path = False
         self._answered_agreement = False  # Track agreement response
+        self._answered_pan_after_aadhaar = False  # Track PAN request after Aadhaar
         self._last_salary_update_response = None
 
     def run(self, question: str = None, **kwargs) -> str:
@@ -67,12 +93,74 @@ class CustomerAgent(BaseAgent):
                 return self._last_salary_update_response or "yes"
         
         # Handle PDF path prompt
-        if any(k in q for k in ["pdf", "salary slip", "file path", "document", "provide the path"]):
+        if any(k in q.lower() for k in ["pdf", "salary slip", "file path", "document", "provide the path"]):
             if not getattr(self, '_answered_pdf_path', False):
                 self._answered_pdf_path = True
-            return os.path.join(os.getcwd(), "sample_salary_template.pdf")
+            # Return the path regardless, no need for else as it's the same
+            return os.path.join(os.getcwd(), "sample_salarypdf_template.pdf")
+
         
-        # Handle PAN/Aadhaar
+        # Handle NEW FLOW: PAN request after Aadhaar (credit score verification)
+        # Be more specific to avoid matching general identifier requests
+        if (("pan number" in q and ("credit score" in q or "verification" in q)) or 
+           ("pan number required" in q) or 
+           ("pan number to fetch" in q) or
+           ("pan for credit" in q)) and "aadhaar" not in q:
+            # This is the new flow where system asks for PAN after Aadhaar for credit score
+            if not getattr(self, '_answered_pan_after_aadhaar', False):
+                self._answered_pan_after_aadhaar = True
+                
+                # Smart PAN mapping: Use database mappings for known Aadhaar numbers
+                aadhaar_to_pan_mapping = {
+                    "631999289535": "NAMWT4886W",
+                    "263955468941": "AASIL9982X", 
+                    "216563686675": "OHWQG0796D",
+                    "747356461632": "DVNFN2660N",
+                    "96193980326": "RFFRX8893L",
+                    "467580848845": "TFVIQ8661A",
+                    "246535477153": "JOZFF9522G",
+                    "503153508818": "GBFLY6345U",
+                    "347676851687": "AOGGX0057V",  # This is the problematic one!
+                    "776849406520": "VNUTM3387Y",
+                    "960716235487": "PKHCY6517J",
+                    "225812783128": "AJTHJ4957H",
+                    "324444958446": "JPYVM1461B"
+                }
+                
+                # Check if we can find the Aadhaar from our profile or use smart mapping
+                current_aadhaar = self.profile.get("aadhaar", self.profile.get("identifier"))
+                if current_aadhaar in aadhaar_to_pan_mapping:
+                    pan_to_return = aadhaar_to_pan_mapping[current_aadhaar]
+                else:
+                    # Fallback to profile PAN
+                    pan_to_return = self.profile.get("pan", "ABCDE1234F")
+                
+                print(f"[CustomerAgent] System requesting PAN for credit score verification. Providing: {pan_to_return}")
+                return pan_to_return
+            else:
+                # Return the same PAN if asked again (use same logic)
+                aadhaar_to_pan_mapping = {
+                    "631999289535": "NAMWT4886W",
+                    "263955468941": "AASIL9982X", 
+                    "216563686675": "OHWQG0796D",
+                    "747356461632": "DVNFN2660N",
+                    "96193980326": "RFFRX8893L",
+                    "467580848845": "TFVIQ8661A",
+                    "246535477153": "JOZFF9522G",
+                    "503153508818": "GBFLY6345U",
+                    "347676851687": "AOGGX0057V",
+                    "776849406520": "VNUTM3387Y",
+                    "960716235487": "PKHCY6517J",
+                    "225812783128": "AJTHJ4957H",
+                    "324444958446": "JPYVM1461B"
+                }
+                current_aadhaar = self.profile.get("aadhaar", self.profile.get("identifier"))
+                if current_aadhaar in aadhaar_to_pan_mapping:
+                    return aadhaar_to_pan_mapping[current_aadhaar]
+                else:
+                    return self.profile.get("pan", "ABCDE1234F")
+        
+        # Handle PAN/Aadhaar/identifier requests (original flow)
         if "pan" in q or "aadhaar" in q or "identifier" in q:
             if not getattr(self, '_answered_identifier', False):
                 self._answered_identifier = True

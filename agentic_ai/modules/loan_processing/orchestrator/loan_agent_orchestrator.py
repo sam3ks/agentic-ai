@@ -1,5 +1,6 @@
 # loan_agent_orchestrator.
 import re
+import json
 from langchain.agents import Tool
 from agentic_ai.modules.loan_processing.services.loan_data_service import LoanDataService
 from agentic_ai.modules.loan_processing.agents.data_query import DataQueryAgent
@@ -14,11 +15,10 @@ from agentic_ai.modules.loan_processing.agents.agreement_agent import AgreementA
 from agentic_ai.core.orchestrator.agent_executor_factory import create_agent_executor
 from agentic_ai.core.utils.parsing import parse_initial_user_request
 from agentic_ai.core.utils.formatting import format_indian_commas,format_indian_currency_without_decimal
-from agentic_ai.modules.loan_processing.agents.offer_refinement_agent import OfferRefinementAgent # Import the new agent
-
+ 
 class LoanAgentOrchestrator:
     """Orchestrates the loan processing workflow."""
-
+ 
     def __init__(self, automate_user: bool = False, customer_profile=None):
         self.data_service = LoanDataService()
         self.data_agent = DataQueryAgent(self.data_service)
@@ -34,11 +34,10 @@ class LoanAgentOrchestrator:
         self.pdf_extractor = PDFSalaryExtractorAgent()
         self.purpose_agent = LoanPurposeAssessmentAgent() # Add purpose assessment agent
         self.agreement_agent = AgreementAgent() # Add agreement agent
-        self.offer_refinement_agent = OfferRefinementAgent() # Instantiate OfferRefinementAgent
        
         self.tools = self._setup_tools()
         self.agent_executor = create_agent_executor(self.tools)
-
+ 
     def _setup_tools(self):
         import json
         def risk_assessment_wrapper(query):
@@ -198,6 +197,21 @@ class LoanAgentOrchestrator:
                 func=self.data_agent.run
             ),
             Tool(
+                name="CreditScoreByPAN",
+                description="SPECIAL TOOL: Use this when DataQuery returns 'user_found_but_pan_needed' status. This fetches credit score using PAN and updates the user data. Input: PAN number. This tool will fetch credit score and return updated user data ready for RiskAssessment.",
+                func=self._fetch_credit_score_with_pan
+            ),
+            Tool(
+                name="ValidatePANAadhaar",
+                description="SECURITY TOOL: Validate that PAN and Aadhaar belong to the same user. Input format must be exactly: 'complete_dataquery_response|provided_pan' where complete_dataquery_response is the FULL JSON response from DataQuery tool and provided_pan is the PAN number entered by user. Example: '{\"aadhaar_identifier\":\"123456789012\",\"expected_pan\":\"ABCDE1234F\"}|ABCDE1234F'",
+                func=lambda query: json.dumps(self._validate_pan_aadhaar_match(*query.split('|', 1)), indent=2)
+            ),
+            Tool(
+                name="MergeUserDataWithCredit",
+                description="SPECIAL TOOL: Use this to merge user data (from Aadhaar) with credit score (from PAN). Input format: 'base_user_data_json|credit_score_data_json'. Returns complete user data ready for RiskAssessment.",
+                func=lambda query: self._merge_user_data_with_credit_score(*query.split('|', 1))
+            ),
+            Tool(
                 name="GeoPolicyCheck",
                 description="ONLY after collecting city, loan purpose and amount. Format MUST BE EXACTLY: 'city:Mumbai,purpose:personal,amount:100000' where city is the customer's city that you explicitly asked for, purpose is the loan purpose, and amount is the loan amount in rupees.",
                 func=self.geo_agent.run
@@ -206,11 +220,6 @@ class LoanAgentOrchestrator:
                 name="RiskAssessment",
                 description="**MANDATORY STEP** - ALWAYS run this after GeoPolicyCheck. This is the final and most important assessment tool. Perform comprehensive risk assessment. REQUIRED FORMAT: 'user_data_json|loan_amount' - The user_data_json must be the COMPLETE user data object from either: 1) DataQuery for existing users who don't want to update salary, 2) PDFSalaryExtractor's output if extraction was successful (use the 'user_data' field from the result), or 3) SalarySheetGenerator only if PDF extraction failed. NEVER skip this tool regardless of GeoPolicyCheck results.",
                 func=risk_assessment_wrapper
-            ),
-            Tool(
-                name="OfferRefinement",
-                description="**MANDATORY STEP** - ALWAYS run this immediately after RiskAssessment before presenting any agreement. This tool analyzes the risk assessment output to suggest relevant upsell/cross-sell offers. Input: Complete JSON output from RiskAssessmentAgent. Returns JSON string with suggested offers and reasoning. DO NOT SKIP THIS TOOL.",
-                func=self.offer_refinement_agent.run
             ),
             Tool(
                 name="PDFSalaryExtractor",
@@ -233,7 +242,6 @@ class LoanAgentOrchestrator:
                 func=self.agreement_agent.run
             )
         ]
-
     def process_application(self, user_input: str) -> str:
         """Processes a loan application."""
         initial_loan_details = parse_initial_user_request(user_input)
@@ -244,18 +252,18 @@ class LoanAgentOrchestrator:
             user_input = re.sub(r"(\d{1,3}(?:,\d{3})+|\d{7,})", formatted_amount, user_input)
         else:
             formatted_amount = None
-       
+ 
         if not self.agent_executor:
             return self._fallback_processing(user_input, "Agent executor not initialized")
-       
-        # Reset and prime the UserInteractionAgent
-        self.interaction_agent.reset_state()
+ 
+        # Only reset identity state if not already collected (prevents repeated PAN/Aadhaar prompts)
+        if not (getattr(self.interaction_agent, '_aadhaar_collected', False) and getattr(self.interaction_agent, '_aadhaar_consent', False) and getattr(self.interaction_agent, '_pan_collected', False) and getattr(self.interaction_agent, '_pan_consent', False)):
+            self.interaction_agent.reset_state()
         self.interaction_agent.set_initial_details(initial_loan_details)
-       
         # Dynamically build the prompt based on what we already know
         prompt_parts = [f'LOAN APPLICATION REQUEST: "{user_input}"\n']
         prompt_parts.append("CRITICAL INSTRUCTIONS - FOLLOW THIS SEQUENCE:")
-
+ 
         # Always check purpose first, regardless of initial parsing
         purpose_from_parsing = initial_loan_details.get("purpose", "unknown")
         if purpose_from_parsing in ["unknown", "not_detected"]:
@@ -273,7 +281,26 @@ class LoanAgentOrchestrator:
             prompt_parts.append("3. Ask for loan amount using UserInteraction.")
        
         prompt_parts.append("4. Ask for PAN/Aadhaar using UserInteraction.")
+       
+        # Unified strict flow for DataQuery and user type handling
         prompt_parts.append("5. Query user data with DataQuery.")
+        prompt_parts.append("   - If DataQuery returns status 'new_user_found_proceed_to_salary_sheet', IMMEDIATELY ask the user to upload their salary PDF or TXT document using UserInteraction.")
+        prompt_parts.append("     * Use PDFSalaryExtractor with the provided path.")
+        prompt_parts.append("     * If PDF extraction is successful (status: pdf_extraction_successful), use the extracted user_data for RiskAssessment and SKIP SalarySheetGenerator.")
+        prompt_parts.append("     * If PDF extraction fails, try again with a different path (absolute path, then just filename, then sample_salary_template.txt).")
+        prompt_parts.append("     * ONLY IF PDFSalaryExtractor returns 'pdf_extraction_failed' or 'fallback_needed' after all attempts, use SalarySheetGenerator as a final fallback.")
+        prompt_parts.append("   - If DataQuery returns an existing user, continue as before:")
+        prompt_parts.append("     * Ask: 'Do you want to update your salary information? (yes/no)' with UserInteraction.")
+        prompt_parts.append("     * If YES, ask for PDF path and use PDFSalaryExtractor.")
+        prompt_parts.append("     * If NO, continue with existing user data.")
+        prompt_parts.append("   - If DataQuery returns 'user_found_but_pan_needed', handle PAN requirement securely:")
+        prompt_parts.append("     * Store the COMPLETE JSON response from DataQuery")
+        prompt_parts.append("     * Use UserInteraction: 'To fetch your credit score for loan processing, please provide your PAN number.'")
+        prompt_parts.append("     * SECURITY: Use ValidatePANAadhaar with format: complete_dataquery_json|provided_pan")
+        prompt_parts.append("     * EXAMPLE: If DataQuery returned {...full json...} and user provided ABCDE1234F, use: '{...full json...}|ABCDE1234F'")
+        prompt_parts.append("     * If validation fails, inform user: 'PAN number does not match our records for this Aadhaar. Please provide the correct PAN.'")
+        prompt_parts.append("     * If validation passes, use CreditScoreByPAN tool with the validated PAN number")
+        prompt_parts.append("     * Continue with the complete validated user data")
        
         prompt_parts.append("""6. HANDLE USER TYPE:
    - If EXISTING USER is found:
@@ -298,13 +325,11 @@ class LoanAgentOrchestrator:
  
         prompt_parts.append("8. Run GeoPolicyCheck with format: city:CITY,purpose:PURPOSE,amount:AMOUNT.")
         prompt_parts.append("9. **MANDATORY**: Run RiskAssessment with user data and amount - DO NOT SKIP THIS STEP.")
-        prompt_parts.append("10. **MANDATORY**: After RiskAssessment, run OfferRefinement with the JSON output from RiskAssessment - DO NOT SKIP THIS STEP.")
-        prompt_parts.append("11. **AGREEMENT STEP**: After OfferRefinement, if loan is APPROVED by RiskAssessment, use AgreementPresentation to show terms.")
-        prompt_parts.append("12. **FINAL STEP**: After presenting agreement, ask user for acceptance using UserInteraction and process response.")
+        prompt_parts.append("10. **AGREEMENT STEP**: If loan is APPROVED by RiskAssessment, use AgreementPresentation to show terms.")
+        prompt_parts.append("11. **FINAL STEP**: After presenting agreement, ask user for acceptance using UserInteraction and process response.")
         prompt_parts.append("\nIMPORTANT: Execute ONE action at a time. Wait for each tool response before proceeding to the next step.")
         prompt_parts.append("Even if GeoPolicyCheck shows conditions, you MUST still run RiskAssessment to get the complete picture.")
-        prompt_parts.append("After RiskAssessment, you MUST run OfferRefinement before presenting any loan agreement.")
-        prompt_parts.append("If RiskAssessment shows APPROVED status, you MUST first run OfferRefinement, then present the loan agreement using AgreementPresentation.")
+        prompt_parts.append("If RiskAssessment shows APPROVED status, you MUST present the loan agreement using AgreementPresentation.")
         prompt_parts.append("\nEXECUTE ONE ACTION AT A TIME - DO NOT PLAN MULTIPLE STEPS IN ADVANCE.")
  
         coordination_prompt = "\n".join(prompt_parts)
@@ -332,4 +357,198 @@ class LoanAgentOrchestrator:
             return format_indian_commas(num)
         text = re.sub(r"\d{1,3}(?:,\d{3})+|\d{7,}", replace_with_indian_commas, text)
         return text
-
+ 
+    def _fetch_credit_score_with_pan(self, pan_number: str) -> str:
+        """
+        Fetch credit score using PAN and update the previously retrieved user data.
+        This is used when user initially provided Aadhaar but PAN is needed for credit score.
+        Includes security validation to ensure PAN belongs to the same user as the Aadhaar.
+        """
+        try:
+            from agentic_ai.core.utils.validators import is_pan
+            import json
+           
+            # Validate PAN format
+            if not is_pan(pan_number.strip()):
+                return json.dumps({
+                    "error": "Invalid PAN format. Please provide a valid PAN number.",
+                    "status": "invalid_pan"
+                })
+           
+            # Check if there's a stored expected PAN for validation
+            # This would be passed via additional context or stored in session
+            # For now, we'll need to validate by checking the database
+           
+            # Fetch user data by PAN to validate it exists and matches
+            validation_user_data = self.data_agent.data_service.get_user_data(pan_number.strip())
+           
+            if validation_user_data.get("status") == "new_user_found_proceed_to_salary_sheet":
+                return json.dumps({
+                    "error": "PAN number not found in our records. Please verify the PAN number.",
+                    "status": "pan_not_found"
+                })
+           
+            # Fetch credit score using the data agent's method
+            api_credit_score = self.data_agent.fetch_credit_score_from_api(pan_number.strip())
+           
+            print(f"\n{'='*50}")
+            print("🎯 CREDIT SCORE VERIFICATION")
+            print(f"🪪 PAN: {pan_number}")
+            print(f"💭 Thought: Fetching credit score for complete user profile...")
+            print(f"📊 Credit Score: {api_credit_score}")
+            print("="*50 + "\n")
+           
+            if api_credit_score is None:
+                return json.dumps({
+                    "error": "Could not fetch credit score for the provided PAN number.",
+                    "status": "credit_score_fetch_failed",
+                    "pan_number": pan_number,
+                    "message": "Please verify the PAN number or try again later."
+                })
+           
+            # Create the complete user data response with credit score
+            # Include the validation user data to ensure we have the complete profile
+            response = {
+                "status": "credit_score_fetched",
+                "pan_number": pan_number,
+                "api_credit_score": api_credit_score,
+                "credit_score": api_credit_score,  # Also set as credit_score for compatibility
+                "user_data": validation_user_data,  # Complete user data from PAN lookup
+                "message": f"Credit score {api_credit_score} successfully fetched using PAN {pan_number}",
+                "instructions": "Credit score has been retrieved. You can now proceed with the complete user data for RiskAssessment.",
+                "security_verified": True
+            }
+           
+            return json.dumps(response, indent=2)
+           
+        except Exception as e:
+            return json.dumps({
+                "error": f"Error fetching credit score: {str(e)}",
+                "status": "fetch_error"
+            })
+ 
+    def _merge_user_data_with_credit_score(self, base_user_data: str, credit_score_data: str) -> str:
+        """
+        Merge user data retrieved via Aadhaar with credit score fetched via PAN.
+        This creates a complete user profile for risk assessment.
+        """
+        try:
+            import json
+           
+            # Parse both data sources
+            base_data = json.loads(base_user_data) if isinstance(base_user_data, str) else base_user_data
+            credit_data = json.loads(credit_score_data) if isinstance(credit_score_data, str) else credit_score_data
+           
+            # Extract credit score from credit_data
+            api_credit_score = credit_data.get('api_credit_score') or credit_data.get('credit_score')
+           
+            if api_credit_score is None:
+                return json.dumps({"error": "No credit score found in credit data"})
+           
+            # If base_data has user_data nested, update it
+            if 'user_data' in base_data and isinstance(base_data['user_data'], dict):
+                base_data['user_data']['credit_score'] = api_credit_score
+                base_data['user_data']['api_credit_score'] = api_credit_score
+                base_data['user_data']['pan_number'] = credit_data.get('pan_number')
+           
+            # Also set at root level
+            base_data['credit_score'] = api_credit_score
+            base_data['api_credit_score'] = api_credit_score
+            base_data['pan_number'] = credit_data.get('pan_number')
+           
+            # Update status
+            base_data['status'] = 'complete_user_data_with_credit_score'
+            base_data['message'] = f"Complete user profile with credit score {api_credit_score}"
+           
+            print(f"\n{'='*50}")
+            print("🔗 USER DATA MERGE COMPLETE")
+            print(f"💭 Thought: Combined Aadhaar user data with PAN credit score")
+            print(f"📊 Final Credit Score: {api_credit_score}")
+            print("=" * 50 + "\n")
+           
+            return json.dumps(base_data, indent=2)
+           
+        except Exception as e:
+            return json.dumps({"error": f"Error merging user data: {str(e)}"})
+ 
+    def _validate_pan_aadhaar_match(self, aadhaar_data: str, pan_number: str) -> dict:
+        """
+        Validate that the provided PAN belongs to the same user as the Aadhaar.
+        Returns validation result with security check status.
+        """
+        try:
+            import json
+           
+            # Parse Aadhaar data - handle both JSON and raw identifiers
+            if isinstance(aadhaar_data, str):
+                try:
+                    parsed = json.loads(aadhaar_data)
+                    if isinstance(parsed, dict):
+                        aadhaar_info = parsed
+                    else:
+                        # It's a valid JSON but not a dict (e.g., number, string)
+                        print(f"⚠️  Invalid input format: Expected JSON object, got {type(parsed).__name__}")
+                        return {
+                            "valid": False,
+                            "error": "Invalid input format. Expected complete DataQuery JSON response, got simple value.",
+                            "reason": "invalid_input_format",
+                            "security_note": "Security validation requires complete user data context"
+                        }
+                except json.JSONDecodeError:
+                    # If it's not JSON at all
+                    print(f"⚠️  Invalid input format: Expected JSON, got raw string '{aadhaar_data[:50]}...'")
+                    return {
+                        "valid": False,
+                        "error": "Invalid input format. Expected complete DataQuery JSON response, got raw identifier.",
+                        "reason": "invalid_input_format",
+                        "security_note": "Security validation requires complete user data context"
+                    }
+            else:
+                aadhaar_info = aadhaar_data
+           
+            # Get expected PAN from Aadhaar lookup
+            expected_pan = aadhaar_info.get('expected_pan')
+            aadhaar_identifier = aadhaar_info.get('aadhaar_identifier')
+           
+            print(f"\n{'='*50}")
+            print("🔒 SECURITY VALIDATION")
+            print(f"🪪 Aadhaar: {aadhaar_identifier}")
+            print(f"🔑 Expected PAN: {expected_pan}")
+            print(f"🔑 Provided PAN: {pan_number}")
+           
+            if not expected_pan:
+                print("⚠️  Warning: No expected PAN found for validation")
+                return {
+                    "valid": False,
+                    "error": "Unable to validate PAN against user record",
+                    "reason": "missing_expected_pan"
+                }
+           
+            if expected_pan.upper().strip() != pan_number.upper().strip():
+                print("❌ SECURITY ALERT: PAN does not match user record")
+                print("="*50 + "\n")
+                return {
+                    "valid": False,
+                    "error": f"PAN number {pan_number} does not belong to the user with Aadhaar {aadhaar_identifier}",
+                    "reason": "pan_aadhaar_mismatch",
+                    "security_violation": True
+                }
+           
+            print("✅ SECURITY CHECK PASSED: PAN matches user record")
+            print("="*50 + "\n")
+            return {
+                "valid": True,
+                "message": "PAN successfully validated against user record",
+                "aadhaar": aadhaar_identifier,
+                "pan": pan_number
+            }
+           
+        except Exception as e:
+            return {
+                "valid": False,
+                "error": f"Validation error: {str(e)}",
+                "reason": "validation_exception"
+            }
+ 
+ 
+ 

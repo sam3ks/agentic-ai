@@ -13,7 +13,8 @@ and captures the user's digital acceptance.
 
 import json
 import logging
-from typing import Dict, Any, Optional
+import os
+from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
 
 from agentic_ai.modules.loan_processing.agents.base_agent import BaseAgent
@@ -60,6 +61,154 @@ class AgreementAgent(BaseAgent):
             ]
         }
     
+    def _load_loan_purpose_policy(self) -> Dict[str, Any]:
+        """Load loan purpose policy from JSON file."""
+        try:
+            # Get the path to the loan purpose policy file
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            policy_file_path = os.path.join(current_dir, '..', 'data', 'loan_purpose_policy.json')
+            
+            with open(policy_file_path, 'r') as file:
+                return json.load(file)
+        except Exception as e:
+            logger.error(f"Error loading loan purpose policy: {e}")
+            return {}
+    
+    def _calculate_dynamic_tenure(self, loan_amount: float, purpose: str, credit_score: int, user_details: Dict[str, Any]) -> int:
+        """
+        Calculate dynamic loan tenure based on amount, purpose, and credit score.
+        
+        Args:
+            loan_amount: Loan amount requested
+            purpose: Loan purpose
+            credit_score: User's credit score
+            user_details: Additional user details
+            
+        Returns:
+            Optimal tenure in months
+        """
+        try:
+            # Load loan purpose policy
+            policy = self._load_loan_purpose_policy()
+            
+            # Base tenure options (in months)
+            tenure_options = [12, 24, 36, 48, 60]
+            
+            # Default tenure
+            optimal_tenure = 36  # 3 years default
+            
+            # 1. Determine loan category and base tenure limits
+            loan_category = self._classify_loan_type(purpose, policy)
+            max_tenure_by_category = self._get_max_tenure_by_category(loan_category, loan_amount)
+            
+            # 2. Adjust based on credit score
+            credit_tenure_adjustment = self._get_tenure_by_credit_score(credit_score)
+            
+            # 3. Adjust based on loan amount
+            amount_tenure_adjustment = self._get_tenure_by_amount(loan_amount)
+            
+            # 4. Calculate optimal tenure starting from a reasonable base
+            base_tenure = 36  # Start with 3 years as base
+            adjusted_tenure = base_tenure + credit_tenure_adjustment + amount_tenure_adjustment
+            
+            # 5. Find closest valid tenure option
+            optimal_tenure = min(tenure_options, key=lambda x: abs(x - adjusted_tenure))
+            
+            # 6. Ensure it doesn't exceed category maximum and is within reasonable bounds
+            optimal_tenure = min(optimal_tenure, max_tenure_by_category, 60)  # Cap at 60 months max
+            
+            logger.info(f"Dynamic tenure calculation: amount={loan_amount}, purpose={purpose}, "
+                       f"credit_score={credit_score}, category={loan_category}, "
+                       f"optimal_tenure={optimal_tenure} months")
+            
+            return optimal_tenure
+            
+        except Exception as e:
+            logger.error(f"Error calculating dynamic tenure: {e}")
+            return 36  # Safe default of 3 years
+    
+    def _classify_loan_type(self, purpose: str, policy: Dict[str, Any]) -> str:
+        """Classify loan type based on purpose."""
+        purpose_lower = purpose.lower()
+        
+        # Direct match first
+        if purpose_lower in policy:
+            return policy[purpose_lower].get('category', 'general_personal_loan')
+        
+        # Fuzzy matching for common terms
+        category_mapping = {
+            'education': 'priority_sector',
+            'home': 'retail_home_loan', 
+            'house': 'retail_home_loan',
+            'property': 'retail_home_loan',
+            'vehicle': 'retail_vehicle_loan',
+            'car': 'retail_vehicle_loan',
+            'bike': 'retail_vehicle_loan',
+            'business': 'MSME',
+            'medical': 'personal_emergency',
+            'health': 'personal_emergency',
+            'wedding': 'personal_celebration',
+            'marriage': 'personal_celebration',
+            'travel': 'personal_lifestyle'
+        }
+        
+        for key, category in category_mapping.items():
+            if key in purpose_lower:
+                return category
+        
+        return 'general_personal_loan'
+    
+    def _get_max_tenure_by_category(self, loan_category: str, loan_amount: float) -> int:
+        """Get maximum tenure allowed by loan category."""
+        category_limits = {
+            'priority_sector': 84,      # Education: up to 7 years
+            'retail_home_loan': 240,    # Home: up to 20 years
+            'retail_vehicle_loan': 84,  # Vehicle: up to 7 years
+            'MSME': 60,                 # Business: up to 5 years
+            'personal_emergency': 48,   # Medical: up to 4 years
+            'personal_celebration': 36, # Wedding: up to 3 years
+            'personal_lifestyle': 24,   # Travel: up to 2 years
+            'general_personal_loan': 60 # General: up to 5 years
+        }
+        
+        max_tenure = category_limits.get(loan_category, 60)
+        
+        # Additional limits based on amount
+        if loan_amount > 1000000:  # > 10 lakhs
+            max_tenure = min(max_tenure, 84)  # Max 7 years for high amounts
+        elif loan_amount > 500000:  # > 5 lakhs
+            max_tenure = min(max_tenure, 60)  # Max 5 years
+        elif loan_amount <= 100000:  # <= 1 lakh
+            max_tenure = min(max_tenure, 36)  # Max 3 years for small amounts
+        
+        return max_tenure
+    
+    def _get_tenure_by_credit_score(self, credit_score: int) -> int:
+        """Get tenure adjustment based on credit score."""
+        if credit_score >= 800:    # Excellent credit
+            return 12  # Allow longer tenure
+        elif credit_score >= 750:  # Good credit
+            return 6   # Slight extension
+        elif credit_score >= 700:  # Fair credit
+            return 0   # No adjustment
+        elif credit_score >= 650:  # Below average
+            return -6  # Shorter tenure
+        else:                      # Poor credit
+            return -12 # Much shorter tenure
+    
+    def _get_tenure_by_amount(self, loan_amount: float) -> int:
+        """Get tenure adjustment based on loan amount."""
+        if loan_amount >= 1000000:    # 10+ lakhs
+            return 12  # Longer tenure for large amounts
+        elif loan_amount >= 500000:   # 5+ lakhs
+            return 6   # Moderate extension
+        elif loan_amount >= 200000:   # 2+ lakhs
+            return 0   # No adjustment
+        elif loan_amount >= 100000:   # 1+ lakh
+            return -6  # Shorter for smaller amounts
+        else:                         # < 1 lakh
+            return -12 # Much shorter for very small amounts
+    
     def present_agreement(self, loan_details: str) -> str:
         """
         Present the loan agreement with terms and conditions.
@@ -86,6 +235,7 @@ class AgreementAgent(BaseAgent):
             interest_rate_raw = details.get('interest_rate', 12.0)
             user_name = details.get('user_name', 'Valued Customer')
             purpose = details.get('purpose', 'Personal Loan')
+            user_details = details.get('user_details', {})
             
             # Handle interest rate - convert string rates to numeric values
             if isinstance(interest_rate_raw, str):
@@ -104,9 +254,16 @@ class AgreementAgent(BaseAgent):
             else:
                 interest_rate = float(interest_rate_raw) if interest_rate_raw else 12.0
             
+            # Extract credit score for dynamic tenure calculation
+            credit_score = user_details.get('credit_score', 650)  # Default score
+            if credit_score == 0:  # If credit score is 0, use a safe default
+                credit_score = 650
+            
+            # Calculate dynamic tenure based on loan amount, purpose, and credit score
+            num_months = self._calculate_dynamic_tenure(loan_amount, purpose, credit_score, user_details)
+            
             # Calculate EMI and other financial details
             monthly_interest_rate = interest_rate / 100 / 12
-            num_months = self.agreement_template['terms']['loan_duration_months']
             
             if monthly_interest_rate > 0:
                 emi = loan_amount * monthly_interest_rate * (1 + monthly_interest_rate)**num_months / ((1 + monthly_interest_rate)**num_months - 1)

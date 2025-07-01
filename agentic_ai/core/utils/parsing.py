@@ -1,3 +1,4 @@
+#parsing.py
 # Enhanced parsing.py with improved sentence-transformers implementation
 import re
 import json
@@ -6,7 +7,7 @@ import os
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from agentic_ai.core.config.constants import AVAILABLE_CITIES
-
+ 
 def load_loan_purpose_categories():
     """
     Load loan purpose categories from the policy JSON file.
@@ -18,10 +19,10 @@ def load_loan_purpose_categories():
         # Navigate to the loan processing data directory
         policy_path = os.path.join(current_dir, '..', '..', 'modules', 'loan_processing', 'data', 'loan_purpose_policy.json')
         policy_path = os.path.abspath(policy_path)
-        
+       
         with open(policy_path, 'r') as f:
             policy_data = json.load(f)
-        
+       
         # Extract all categories
         categories = list(policy_data.keys())
         print(f"[DEBUG] Loaded {len(categories)} loan purpose categories from policy file")
@@ -30,18 +31,18 @@ def load_loan_purpose_categories():
         print(f"[DEBUG] Error loading loan purpose categories: {str(e)}")
         # Fallback to hardcoded list
         return [
-            "education", "home purchase", "vehicle purchase", "medical emergency", 
-            "business expansion", "marriage", "travel", "crypto trading", "gambling", 
-            "stock market trading", "debt consolidation", "luxury purchases", 
+            "education", "home purchase", "vehicle purchase", "medical emergency",
+            "business expansion", "marriage", "travel", "crypto trading", "gambling",
+            "stock market trading", "debt consolidation", "luxury purchases",
             "illegal interests", "miscellaneous", "not_detected"
         ]
-
+ 
 def create_enhanced_purpose_descriptions(predefined_purposes: list) -> list:
     """
     Create enhanced descriptions for better semantic matching.
     """
     enhanced_descriptions = []
-    
+   
     purpose_enhancements = {
         "education": "education loan for studies, school fees, college tuition, university expenses, course fees, academic learning, student loan",
         "home purchase": "home loan for buying house, purchasing property, real estate acquisition, residential property, flat purchase, housing loan",
@@ -59,13 +60,13 @@ def create_enhanced_purpose_descriptions(predefined_purposes: list) -> list:
         "miscellaneous": "general purpose, personal needs, other requirements, miscellaneous expenses, unspecified use, personal loan",
         "not_detected": "unclear purpose, ambiguous request, unrelated to loans, general conversation"
     }
-    
+   
     for purpose in predefined_purposes:
         enhanced_desc = purpose_enhancements.get(purpose, purpose)
         enhanced_descriptions.append(enhanced_desc)
-    
+   
     return enhanced_descriptions
-
+ 
 def adjust_threshold_based_on_context(user_input: str, base_threshold: float) -> float:
     """
     Adjust the similarity threshold based on the context and quality of the user input.
@@ -73,17 +74,17 @@ def adjust_threshold_based_on_context(user_input: str, base_threshold: float) ->
     # Check for explicit loan keywords
     explicit_loan_keywords = ["loan", "borrow", "finance", "credit", "funding", "lend"]
     has_explicit_keyword = any(keyword in user_input.lower() for keyword in explicit_loan_keywords)
-    
+   
     # Check for purpose-specific keywords
     purpose_keywords = [
         "buy", "purchase", "need", "want", "require", "looking for", "apply for",
         "education", "home", "car", "medical", "business", "travel", "marriage"
     ]
     has_purpose_keyword = any(keyword in user_input.lower() for keyword in purpose_keywords)
-    
+   
     # Check for amount mentions which indicate serious loan inquiry
     has_amount = re.search(r'\b\d+\s*(lakh|crore|thousand|million|rupees|rs)\b', user_input, re.IGNORECASE)
-    
+   
     # Adjust threshold based on context
     if has_explicit_keyword and has_purpose_keyword:
         # Strong loan context - lower threshold for easier matching
@@ -94,7 +95,7 @@ def adjust_threshold_based_on_context(user_input: str, base_threshold: float) ->
     else:
         # Weak loan context - higher threshold for stricter matching
         return min(0.85, base_threshold + 0.2)
-
+ 
 def extract_purpose_with_regex_fallback(user_input: str, predefined_purposes: list) -> str:
     """
     Fallback method to extract purpose using regex patterns when sentence transformers fail.
@@ -111,67 +112,67 @@ def extract_purpose_with_regex_fallback(user_input: str, predefined_purposes: li
         "debt consolidation": r'\b(debt|consolidat|refinanc|balance transfer|existing loan|restructur)\b',
         "luxury purchases": r'\b(luxury|premium|expensive|high-end|jewellery|jewelry|gold|diamond)\b'
     }
-    
+   
     for purpose, pattern in purpose_patterns.items():
         if re.search(pattern, user_input, re.IGNORECASE):
             print(f"[DEBUG] Regex match found for purpose: {purpose}")
             return purpose
-    
+   
     # If no specific pattern matches, check for general loan types
     if re.search(r'\b(personal|general)\s+loan\b', user_input, re.IGNORECASE):
         return "miscellaneous"
-    
+   
     return "unknown"
-
+ 
 def find_best_matching_purpose_enhanced(user_input: str, model: SentenceTransformer, predefined_purposes: list, threshold: float = 0.45) -> str:
     """
     Enhanced version of find_best_matching_purpose with better semantic matching and context awareness.
     """
     try:
         print(f"[DEBUG] Enhanced semantic matching for: '{user_input}'")
-        
+       
         # Create enhanced purpose descriptions for better matching
         enhanced_purposes = create_enhanced_purpose_descriptions(predefined_purposes)
-        
+       
         # Encode the user input
         user_embedding = model.encode([user_input])
-        
+       
         # General conversation filtering
         non_purpose_phrases = [
             "hello", "hi there", "how are you", "what's up", "good morning",
             "good afternoon", "nice to meet you", "how's it going", "what can you do",
             "thanks", "thank you", "bye", "goodbye", "see you later"
         ]
-        
+       
         # Check if input is closer to general conversation
         non_purpose_embeddings = model.encode(non_purpose_phrases)
         # Compute cosine similarity properly
         non_purpose_similarities = cosine_similarity(user_embedding, non_purpose_embeddings)[0]
         max_non_purpose_similarity = np.max(non_purpose_similarities)
-        
+       
         if max_non_purpose_similarity > 0.7:
             print(f"[DEBUG] Input appears to be general conversation (similarity: {max_non_purpose_similarity:.4f})")
             return "not_detected"
-        
+       
         # Encode the enhanced purpose descriptions
         purpose_embeddings = model.encode(enhanced_purposes)
-        
+       
         # Calculate cosine similarity properly
         similarities = cosine_similarity(user_embedding, purpose_embeddings)[0]
-        
+       
         # Find top matches for debugging
         top_indices = np.argsort(similarities)[::-1][:5]
         for i, idx in enumerate(top_indices):
             print(f"[DEBUG] Match #{i+1}: '{predefined_purposes[idx]}' (score: {similarities[idx]:.4f})")
-        
+       
         # Get the best match
         best_match_idx = top_indices[0]
         best_match_score = similarities[best_match_idx]
         best_match = predefined_purposes[best_match_idx]
-        
+       
         # Context-aware threshold adjustment
         effective_threshold = adjust_threshold_based_on_context(user_input, threshold)
-        
+       
         # Return the matched purpose if it meets the threshold
         if best_match_score >= effective_threshold:
             print(f"[DEBUG] Enhanced purpose matched: '{best_match}' (score: {best_match_score:.4f})")
@@ -184,11 +185,11 @@ def find_best_matching_purpose_enhanced(user_input: str, model: SentenceTransfor
                 print(f"[DEBUG] Regex fallback found: {regex_result}")
                 return regex_result
             return "miscellaneous"  # Use miscellaneous instead of unknown for unclear purposes
-            
+           
     except Exception as e:
         print(f"[DEBUG] Error in enhanced purpose matching: {str(e)}")
         return "unknown"
-
+ 
 def extract_json_from_string(text: str) -> dict:
     """
     Extracts a JSON object from a string with improved robustness.
@@ -201,7 +202,7 @@ def extract_json_from_string(text: str) -> dict:
         except json.JSONDecodeError:
             # If parsing fails, continue with standard extraction
             pass
-    
+   
     # Find JSON-like content
     json_match = re.search(r'\{.*\}', text, re.DOTALL)
     if json_match:
@@ -209,7 +210,7 @@ def extract_json_from_string(text: str) -> dict:
         # Clean up common issues that might cause parsing to fail
         json_str = re.sub(r',\s*}', '}', json_str)  # Remove trailing commas
         json_str = re.sub(r',\s*]', ']', json_str)  # Remove trailing commas in arrays
-        
+       
         try:
             return json.loads(json_str)
         except json.JSONDecodeError as e:
@@ -217,7 +218,7 @@ def extract_json_from_string(text: str) -> dict:
             # Print the problematic JSON for debugging
             print(f"Problematic JSON: {json_str}")
             return {}
-    
+   
     # If no JSON is found, try to create one from key-value pairs in the text
     if ':' in text and ('"' in text or "'" in text):
         try:
@@ -236,9 +237,9 @@ def extract_json_from_string(text: str) -> dict:
                 return result
         except Exception:
             pass
-    
+   
     return {}
-
+ 
 def parse_initial_user_request(user_input: str) -> dict:
     """
     Parses the initial user request to extract loan purpose, amount, and city.
@@ -247,22 +248,29 @@ def parse_initial_user_request(user_input: str) -> dict:
     loan_purpose = "unknown"
     loan_amount = 0.0
     loan_city = "unknown"
-
+ 
     print(f"[DEBUG] Parsing initial request: {user_input}")
-    
+   
     # Load predefined purposes from policy JSON file
     predefined_purposes = load_loan_purpose_categories()
-    
+   
     # Check if the input appears to be a loan request at all
     loan_related_phrases = [
-        "loan", "borrow", "lend", "finance", "credit", "money for", "need funds", 
-        "funding for", "want to buy", "purchase", "investing in", "financing", 
+        "loan", "borrow", "lend", "finance", "credit", "money for", "need funds",
+        "funding for", "want to buy", "purchase", "investing in", "financing",
         "need money", "require funds", "looking for", "apply for", "seeking"
     ]
-    is_likely_loan_request = any(phrase in user_input.lower() for phrase in loan_related_phrases)
-    
-    # If it doesn't look like a loan request at all, don't try to extract a purpose
-    if not is_likely_loan_request:
+    generic_purpose_phrases = [
+        "need loan", "want loan", "loan required", "apply loan", "loan needed", "loan wanted", "loan", "i need loan", "i want loan"
+    ]
+    user_input_clean = user_input.strip().lower()
+    is_likely_loan_request = any(phrase in user_input_clean for phrase in loan_related_phrases)
+ 
+    # If input is too generic, force not_detected
+    if any(phrase == user_input_clean or user_input_clean.startswith(phrase + " ") for phrase in generic_purpose_phrases):
+        print(f"[DEBUG] Input '{user_input}' is too generic. Routing to 'not_detected'.")
+        loan_purpose = "not_detected"
+    elif not is_likely_loan_request:
         print("[DEBUG] Input doesn't appear to be a loan request")
         loan_purpose = "not_detected"
     else:
@@ -275,7 +283,7 @@ def parse_initial_user_request(user_input: str) -> dict:
             # Fallback to regex if model couldn't be loaded
             print("[DEBUG] Falling back to regex for purpose extraction")
             loan_purpose = extract_purpose_with_regex_fallback(user_input, predefined_purposes)
-
+ 
     # Extract city - will do a first pass with exact matches
     city_found = False
     for city in AVAILABLE_CITIES:
@@ -284,7 +292,7 @@ def parse_initial_user_request(user_input: str) -> dict:
             print(f"[DEBUG] Found exact match for city: {loan_city}")
             city_found = True
             break
-    
+   
     # If no exact match, try to extract any city-like word for further processing
     if not city_found:
         # Look for words that might be cities - exclude common words that are not cities
@@ -293,7 +301,7 @@ def parse_initial_user_request(user_input: str) -> dict:
             'loan', 'money', 'funds', 'finance', 'credit', 'purchase', 'buy', 'home', 'car',
             'education', 'travel', 'marriage', 'wedding', 'emergency', 'treatment', 'investment'
         }
-        
+       
         # Find capitalized words that could be cities
         words = re.findall(r'\b[A-Z][a-z]{3,}\b', user_input)
         if words:
@@ -303,7 +311,7 @@ def parse_initial_user_request(user_input: str) -> dict:
                     print(f"[DEBUG] Found potential city mention: {word}")
                     loan_city = word  # This will be validated by the fuzzy matcher
                     break
-        
+       
         # Additional check for lowercase city names with common prefixes
         city_patterns = [r'\bin\s+([a-z]{4,})\b', r'\bfrom\s+([a-z]{4,})\b', r'\bat\s+([a-z]{4,})\b']
         for pattern in city_patterns:
@@ -314,7 +322,7 @@ def parse_initial_user_request(user_input: str) -> dict:
                     print(f"[DEBUG] Found potential city from context: {potential_city}")
                     loan_city = potential_city
                     break
-
+ 
     # Amount regex - keep using regex for this as it's more accurate for numeric extraction
     amount_match = re.search(r'(\d+(?:,\d+)*(?:\.\d+)?)\s*(lakhs?|million|crore|thousand|rs|rupees)?', user_input, re.IGNORECASE)
     if amount_match:
@@ -330,22 +338,22 @@ def parse_initial_user_request(user_input: str) -> dict:
         elif 'thousand' in unit:
             loan_amount *= 1000
         print(f"[DEBUG] Found amount: {loan_amount}")
-    
+   
     # Final debug output
     print(f"[DEBUG] Final parsed values - Purpose: '{loan_purpose}', Amount: {loan_amount}, City: '{loan_city}'")
-    
+   
     return {"purpose": loan_purpose, "amount": loan_amount, "city": loan_city}
-
+ 
 def find_best_matching_purpose(user_input: str, model: SentenceTransformer, predefined_purposes: list, threshold: float = 0.65) -> str:
     """
-    Legacy function for backward compatibility. 
+    Legacy function for backward compatibility.
     Redirects to the enhanced version with adjusted threshold.
     """
     return find_best_matching_purpose_enhanced(user_input, model, predefined_purposes, threshold)
-
+ 
 # Initialize the sentence transformer model (load only once for efficiency)
 _sentence_transformer_model = None
-
+ 
 def get_sentence_transformer_model():
     """
     Get or initialize the sentence transformer model.

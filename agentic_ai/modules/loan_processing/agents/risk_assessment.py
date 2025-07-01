@@ -62,13 +62,20 @@ class RiskAssessmentAgent(BaseAgent):
                     }
             
             # --- Risk Tiers Definition ---
+            # --- Risk Tiers Definition with Final Interest Rate ---
+ 
+            base_rate = 8.0  # Base interest rate for all categories
+ 
             risk_tiers = [
+
                 {
+
                     "name": "Low Risk",
                     "credit_score_range": [750, 900],
                     "composite_score_min": 85,
                     "decision": "approve",
                     "interest_adjustment": 0.0,
+                    "final_interest_rate": base_rate + 0.0,
                     "notes": "Eligible for best rate and full approval"
                 },
                 {
@@ -77,6 +84,7 @@ class RiskAssessmentAgent(BaseAgent):
                     "composite_score_min": 70,
                     "decision": "approve",
                     "interest_adjustment": 1.5,
+                    "final_interest_rate": base_rate + 1.5,
                     "notes": "Minor premium on interest rate"
                 },
                 {
@@ -85,9 +93,11 @@ class RiskAssessmentAgent(BaseAgent):
                     "composite_score_min": 60,
                     "decision": "approve_with_conditions",
                     "interest_adjustment": 2.5,
+                    "final_interest_rate": base_rate + 2.5,
                     "max_loan_amount_pct": 80,
                     "notes": "Approval with reduced amount or shorter tenure"
                 },
+
                 {
                     "name": "High Risk",
                     "credit_score_range": [600, 649],
@@ -106,7 +116,6 @@ class RiskAssessmentAgent(BaseAgent):
                     "notes": "Reject as per lending policy"
                 }
             ]
-            
             
             # Try to extract loan amount from the query string
             loan_amount = None

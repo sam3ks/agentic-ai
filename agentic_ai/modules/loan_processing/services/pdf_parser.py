@@ -79,7 +79,7 @@ class PDFSalaryParser:
             
             # If still not found, try the sample template as fallback
             if not os.path.exists(pdf_path):
-                sample_path = os.path.join(os.getcwd(), "agentic_ai", "sample_salary_template.txt")
+                sample_path = os.path.join(os.getcwd(), "agentic_ai", "sample_salarypdf_template.pdf")
                 print(f"[PDF PARSER] Trying sample template fallback: {sample_path}")
                 if os.path.exists(sample_path):
                     pdf_path = sample_path
