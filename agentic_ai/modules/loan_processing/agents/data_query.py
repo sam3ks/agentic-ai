@@ -67,8 +67,8 @@ class DataQueryAgent(BaseAgent):
                 if not user_row.empty:
                     aadhaar = user_row.iloc[0]['aadhaar_number']
                 else:
-                    return json.dumps({"error": "PAN not found in records. Cannot fetch user details."})
- 
+                    return json.dumps({"info": "PAN not found in records. Cannot fetch user details."})
+
             # If only Aadhaar is provided, use it
             if aadhaar:
                 user_data = self.data_service.get_user_data(aadhaar)
@@ -129,5 +129,3 @@ class DataQueryAgent(BaseAgent):
     def run(self, query: str) -> str:
         """Runs the agent's specific task."""
         return self.query_user_data(query)
- 
- 

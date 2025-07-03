@@ -1,6 +1,8 @@
 # loan_agent_orchestrator.
 import re
 import json
+import time
+from typing import Dict, Any
 from langchain.agents import Tool
 from agentic_ai.modules.loan_processing.services.loan_data_service import LoanDataService
 from agentic_ai.modules.loan_processing.agents.data_query import DataQueryAgent
@@ -34,6 +36,12 @@ class LoanAgentOrchestrator:
         self.pdf_extractor = PDFSalaryExtractorAgent()
         self.purpose_agent = LoanPurposeAssessmentAgent() # Add purpose assessment agent
         self.agreement_agent = AgreementAgent() # Add agreement agent
+        
+        # Escalation tracking
+        self.escalation_attempts = {}  # Track attempts per question type
+        self.max_attempts = 3
+        self.current_question_type = None
+        self.conversation_history = []
        
         self.tools = self._setup_tools()
         self.agent_executor = create_agent_executor(self.tools)
@@ -184,7 +192,7 @@ class LoanAgentOrchestrator:
             Tool(
                 name="UserInteraction",
                 description="THE FIRST TOOL TO USE. Get user input. Input: question to ask the user. You MUST ask for loan purpose, loan amount, and city explicitly using separate questions.",
-                func=self.interaction_agent.run
+                func=self._user_interaction_with_escalation
             ),
             Tool(
                 name="LoanPurposeAssessment",
@@ -343,6 +351,9 @@ class LoanAgentOrchestrator:
  
     def _fallback_processing(self, user_input: str, reason: str) -> str:
         """Fallback processing when the main agent fails."""
+        # Suppress fallback message for specific early_stopping_method error
+        if "Got unsupported early_stopping_method `generate`" in reason:
+            return ""  
         loan_amount = parse_initial_user_request(user_input).get('amount', 0)
         return f"""
 🏦 **LOAN APPLICATION ERROR - FALLBACK MODE**
@@ -549,6 +560,243 @@ class LoanAgentOrchestrator:
                 "error": f"Validation error: {str(e)}",
                 "reason": "validation_exception"
             }
- 
- 
- 
+    
+    def _validate_user_response(self, response: str, question: str) -> tuple:
+        """
+        Validate user response based on question type.
+        Returns (is_valid, error_message)
+        """
+        response = response.strip().lower()
+        
+        # Determine question type
+        question_lower = question.lower()
+        
+        # Loan amount validation
+        if any(keyword in question_lower for keyword in ['amount', 'loan amount', 'how much']):
+            try:
+                # Parse Indian currency formats
+                amount = self._parse_indian_amount(response)
+                if amount is None:
+                    return False, "Please provide a valid amount (e.g., 50000, 5 lakhs, 2.5 crores)."
+                
+                # Check realistic range for loan amounts
+                if amount < 1000:
+                    return False, "Loan amount too small. Minimum is ₹1,000."
+                elif amount > 10000000:  # 1 crore
+                    return False, "Loan amount too large. Maximum is ₹1,00,00,000."
+                
+                return True, ""
+                
+            except:
+                return False, "Please provide a valid numeric amount."
+        
+        # Loan purpose validation
+        elif any(keyword in question_lower for keyword in ['purpose', 'use the loan', 'reason']):
+            if len(response) < 3 or response in ['i dont know', "don't know", 'idk', 'dunno']:
+                return False, "Please specify a clear loan purpose (e.g., bike purchase, home renovation, personal expenses)."
+            return True, ""
+        
+        # PAN validation
+        elif any(keyword in question_lower for keyword in ['pan', 'pan number']):
+            from agentic_ai.core.utils.validators import is_pan
+            if not is_pan(response.upper()):
+                return False, "Please provide a valid PAN number (format: ABCDE1234F)."
+            return True, ""
+        
+        # Aadhaar validation
+        elif any(keyword in question_lower for keyword in ['aadhaar', 'aadhar']):
+            from agentic_ai.core.utils.validators import is_aadhaar
+            if not is_aadhaar(response):
+                return False, "Please provide a valid 12-digit Aadhaar number."
+            return True, ""
+        
+        # City validation
+        elif any(keyword in question_lower for keyword in ['city', 'location']):
+            if len(response) < 2:
+                return False, "Please provide a valid city name."
+            return True, ""
+        
+        # Yes/No questions validation
+        elif any(keyword in question_lower for keyword in ['yes/no', '(yes/no)', 'yes or no', 'salary information']):
+            clean_response = response.replace(',', '').replace('.', '').strip()
+            yes_responses = ['yes', 'y', 'sure', 'ok', 'okay', 'please', 'yep', 'yeah', 'yup', 'confirm', 'proceed']
+            no_responses = ['no', 'n', 'nope', 'not', 'decline', 'skip', 'none', 'negative']
+            
+            if any(word in clean_response for word in yes_responses) or any(word in clean_response for word in no_responses):
+                return True, ""
+            else:
+                return False, "Please respond with 'yes' or 'no'."
+        
+        # PDF path questions
+        elif any(keyword in question_lower for keyword in ['pdf', 'file', 'document', 'upload']):
+            if response.lower().endswith(('.pdf', '.txt')) or 'sample' in response.lower():
+                return True, ""
+            return False, "Please provide a valid PDF or text file path."
+        
+        # Default validation - check for gibberish
+        if len(response.strip()) < 1:
+            return False, "Please provide a valid response."
+        
+        # Check for obvious gibberish (random characters)
+        if len(response) > 3:
+            # Count how many characters are letters vs numbers vs special chars
+            letters = sum(c.isalpha() for c in response)
+            numbers = sum(c.isdigit() for c in response)
+            total_chars = len(response.replace(' ', ''))
+            
+            # If more than 80% of chars are random letters without spaces, likely gibberish
+            if total_chars > 5 and letters > total_chars * 0.8 and ' ' not in response:
+                # Check if it looks like random typing (no dictionary words)
+                words = response.lower().split()
+                if len(words) == 1 and len(words[0]) > 6:
+                    # Simple check for gibberish - no vowels pattern or too many consonants
+                    vowels = sum(1 for c in words[0] if c in 'aeiou')
+                    consonants = sum(1 for c in words[0] if c.isalpha() and c not in 'aeiou')
+                    if vowels < 2 and consonants > 4:
+                        return False, "Please provide a clear, meaningful response."
+        
+        return True, ""
+    
+    def _user_interaction_with_escalation(self, question: str) -> str:
+        """
+        User interaction with escalation support.
+        Tracks attempts and escalates to human after max_attempts failures.
+        """
+        question_key = hash(question)  # Use hash as unique key for this question
+        
+        if question_key not in self.escalation_attempts:
+            self.escalation_attempts[question_key] = 0
+        
+        while self.escalation_attempts[question_key] < self.max_attempts:
+            self.escalation_attempts[question_key] += 1
+            attempt_num = self.escalation_attempts[question_key]
+            
+            print(f"🔄 Attempt {attempt_num}/{self.max_attempts} - UserInteractionAgent")
+            
+            # Get user response
+            response = self.interaction_agent.run(question)
+            
+            # Add to conversation history
+            self.conversation_history.append(f"System: {question}")
+            self.conversation_history.append(f"User: {response}")
+            
+            # Validate response
+            is_valid, error_message = self._validate_user_response(response, question)
+            
+            if is_valid:
+                print(f"✅ UserInteractionAgent succeeded on attempt {attempt_num}")
+                # Reset attempts for this question on success
+                self.escalation_attempts[question_key] = 0
+                return response
+            else:
+                print(f"⚠️ Response validation failed: {error_message}")
+                if attempt_num < self.max_attempts:
+                    print(f"🔄 Retrying... ({attempt_num}/{self.max_attempts})")
+                    # Modify question to include the error message
+                    question = f"{error_message} {question}"
+                else:
+                    # Max attempts reached - ask for escalation
+                    escalate_response = self._ask_for_escalation(question, response, error_message)
+                    if escalate_response:
+                        return escalate_response
+        
+        # If we get here, escalation was declined or failed
+        return f"Unable to process your request. Please contact customer service directly."
+    
+    def _ask_for_escalation(self, question: str, last_response: str, error_message: str) -> str:
+        """
+        Ask user if they want to escalate to human agent.
+        """
+        print(f"\n{'='*60}")
+        print("🚨 ESCALATION NOTICE")
+        print(f"{'='*60}")
+        print(f"We've tried {self.max_attempts} times but couldn't process your response properly.")
+        print(f"Last error: {error_message}")
+        print(f"Your last response: {last_response}")
+        print(f"{'='*60}")
+        
+        escalation_question = "\nWould you like to escalate this matter to a human agent who can help you personally? (yes/no)"
+        escalation_response = input(f"🤔 {escalation_question}\nYour response: ").strip().lower()
+        
+        if escalation_response in ['yes', 'y', 'sure', 'ok', 'okay', 'please']:
+            return self._escalate_to_human(question, last_response, error_message)
+        else:
+            print("📞 You can contact our customer service at any time for assistance.")
+            return None
+    
+    def _escalate_to_human(self, question: str, user_response: str, error_message: str) -> str:
+        """
+        Escalate to human agent - connects to actual human operator.
+        """
+        print(f"\n{'='*60}")
+        print("👨‍💼 ESCALATING TO HUMAN AGENT")
+        print(f"{'='*60}")
+        print("Please wait while we connect you to a human agent...")
+        print("A human operator will help you with your request.")
+        print(f"{'='*60}")
+        
+        # Import and use the actual human agent system
+        try:
+            from agentic_ai.modules.loan_processing.agents.human_agent import get_human_agent
+            
+            # Create escalation context
+            escalation_context = {
+                "agent_name": "UserInteractionAgent",
+                "user_input": user_response,
+                "question": question,
+                "failure_count": 3,
+                "conversation_history": self.conversation_history.copy(),
+                "error_message": error_message,
+                "escalated_from": "orchestrator"
+            }
+            
+            # Get human agent and escalate
+            human_agent = get_human_agent()
+            human_response = human_agent.escalate_to_human(escalation_context)
+            
+            return human_response
+            
+        except Exception as e:
+            print(f"❌ Error connecting to human agent: {e}")
+            # Fallback to basic response
+            return f"Unable to connect to human agent right now. Please contact customer service directly or try again later."
+    
+    def _parse_indian_amount(self, response: str) -> int:
+        """
+        Parse Indian currency formats like '10 lakhs', '2.5 crores', '50000', etc.
+        Returns the amount in rupees or None if invalid.
+        """
+        import re
+        
+        response = response.lower().strip()
+        
+        # Remove common currency symbols and words
+        response = re.sub(r'[₹$,]', '', response)
+        response = re.sub(r'\brupees?\b|\brs\.?\b', '', response)
+        
+        # Handle different formats
+        if 'crore' in response or 'cr' in response:
+            # Extract number before 'crore'
+            match = re.search(r'(\d+(?:\.\d+)?)', response)
+            if match:
+                return int(float(match.group(1)) * 10000000)  # 1 crore = 1,00,00,000
+        
+        elif 'lakh' in response or 'lac' in response:
+            # Extract number before 'lakh'
+            match = re.search(r'(\d+(?:\.\d+)?)', response)
+            if match:
+                return int(float(match.group(1)) * 100000)  # 1 lakh = 1,00,000
+        
+        elif 'thousand' in response or 'k' in response:
+            # Extract number before 'thousand' or 'k'
+            match = re.search(r'(\d+(?:\.\d+)?)', response)
+            if match:
+                return int(float(match.group(1)) * 1000)  # 1 thousand = 1,000
+        
+        else:
+            # Try to extract plain number
+            numbers = re.findall(r'\d+', response.replace(',', ''))
+            if numbers:
+                return int(''.join(numbers))
+        
+        return None

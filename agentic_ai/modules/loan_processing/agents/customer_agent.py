@@ -93,12 +93,12 @@ class CustomerAgent(BaseAgent):
                 return self._last_salary_update_response or "yes"
         
         # Handle PDF path prompt
-        if any(k in q.lower() for k in ["pdf", "salary slip", "file path", "document", "provide the path"]):
+        if ("pdf" in q or "salary slip" in q or "file path" in q or "document" in q or "provide the path" in q):
             if not getattr(self, '_answered_pdf_path', False):
                 self._answered_pdf_path = True
-            # Return the path regardless, no need for else as it's the same
-            return os.path.join(os.getcwd(), "sample_salarypdf_template.pdf")
-
+                return r"C:\Users\R.Darshan\Downloads\Agentic_AI_main_v8 (1)\Agentic_AI_main_v8\Agentic_AI_main_v5\agentic-ai-main\agentic_ai\sample_salarypdf_template.pdf"
+            else:
+                return r"C:\Users\R.Darshan\Downloads\Agentic_AI_main_v8 (1)\Agentic_AI_main_v8\Agentic_AI_main_v5\agentic-ai-main\agentic_ai\sample_salarypdf_template.pdf"
         
         # Handle NEW FLOW: PAN request after Aadhaar (credit score verification)
         # Be more specific to avoid matching general identifier requests
@@ -116,11 +116,11 @@ class CustomerAgent(BaseAgent):
                     "263955468941": "AASIL9982X", 
                     "216563686675": "OHWQG0796D",
                     "747356461632": "DVNFN2660N",
-                    "96193980326": "RFFRX8893L",
+                    "96193980326":  "RFFRX8893L",
                     "467580848845": "TFVIQ8661A",
                     "246535477153": "JOZFF9522G",
                     "503153508818": "GBFLY6345U",
-                    "347676851687": "AOGGX0057V",  # This is the problematic one!
+                    "347676851687": "AOGGX0057V",
                     "776849406520": "VNUTM3387Y",
                     "960716235487": "PKHCY6517J",
                     "225812783128": "AJTHJ4957H",

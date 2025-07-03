@@ -61,5 +61,5 @@ click
 fuzzywuzzy
 python-Levenshtein
 PyPDF2
-flask_cors
 flask
+flask-cors

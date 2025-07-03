@@ -484,4 +484,3 @@ REASON: [Brief explanation of your decision]
  
     def _format_currency(self, amount):
         return format_indian_commas(amount)
- 

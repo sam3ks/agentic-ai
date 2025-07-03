@@ -1,0 +1,279 @@
+{
+  "test_1751371917": {
+    "escalation_id": "test_1751371917",
+    "timestamp": "2025-07-01T17:41:57.691423",
+    "context": {
+      "agent_name": "UserInteractionAgent",
+      "user_input": "invalid response",
+      "question": "Test question?",
+      "failure_count": 3,
+      "conversation_history": [
+        "System: Test",
+        "User: invalid"
+      ],
+      "error_message": "Invalid response"
+    },
+    "status": "waiting_for_human",
+    "priority": "MEDIUM"
+  },
+  "esc_1751372880_1": {
+    "escalation_id": "esc_1751372880_1",
+    "timestamp": "2025-07-01T17:58:00.745036",
+    "context": {
+      "agent_name": "UserInteractionAgent",
+      "user_input": "777777777",
+      "question": "Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+      "failure_count": 3,
+      "conversation_history": [
+        "System: How much loan amount do you need?",
+        "User: 999999999",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 888888888",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 777777777"
+      ],
+      "error_message": "Loan amount too large. Maximum is \u20b91,00,00,000.",
+      "escalated_from": "orchestrator"
+    },
+    "status": "waiting_for_human",
+    "priority": "MEDIUM"
+  },
+  "esc_1751372998_2": {
+    "escalation_id": "esc_1751372998_2",
+    "timestamp": "2025-07-01T17:59:58.062897",
+    "context": {
+      "agent_name": "UserInteractionAgent",
+      "user_input": "12345670987",
+      "question": "Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+      "failure_count": 3,
+      "conversation_history": [
+        "System: How much loan amount do you need?",
+        "User: i needed around 100 crores",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 123456789",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 12345670987"
+      ],
+      "error_message": "Loan amount too large. Maximum is \u20b91,00,00,000.",
+      "escalated_from": "orchestrator"
+    },
+    "status": "resolved",
+    "priority": "MEDIUM",
+    "human_response": "please enter a proper valid response as an amount , as a bank we have certain limits on the credit provided.",
+    "resolved_at": "2025-07-01T18:01:41.908169"
+  },
+  "esc_1751375748_3": {
+    "escalation_id": "esc_1751375748_3",
+    "timestamp": "2025-07-01T18:45:48.338328",
+    "context": {
+      "agent_name": "UserInteractionAgent",
+      "user_input": "87654321234567",
+      "question": "Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+      "failure_count": 3,
+      "conversation_history": [
+        "System: How much loan amount do you need?",
+        "User: 1234567898765",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 987654323456",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 87654321234567"
+      ],
+      "error_message": "Loan amount too large. Maximum is \u20b91,00,00,000.",
+      "escalated_from": "orchestrator"
+    },
+    "status": "resolved",
+    "priority": "MEDIUM",
+    "human_response": "enter lower value",
+    "resolved_at": "2025-07-01T18:47:32.161829"
+  },
+  "esc_1751440731_4": {
+    "escalation_id": "esc_1751440731_4",
+    "timestamp": "2025-07-02T12:48:51.205677",
+    "context": {
+      "agent_name": "UserInteractionAgent",
+      "user_input": "1234567890",
+      "question": "Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+      "failure_count": 3,
+      "conversation_history": [
+        "System: How much loan amount do you need?",
+        "User: 123456789009876",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 12345678123456",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 1234567890"
+      ],
+      "error_message": "Loan amount too large. Maximum is \u20b91,00,00,000.",
+      "escalated_from": "orchestrator"
+    },
+    "status": "resolved",
+    "priority": "MEDIUM",
+    "human_response": "Enter Less amount not large amount",
+    "resolved_at": "2025-07-02T12:51:54.445157"
+  },
+  "esc_1751441106_5": {
+    "escalation_id": "esc_1751441106_5",
+    "timestamp": "2025-07-02T12:55:06.062902",
+    "context": {
+      "agent_name": "UserInteractionAgent",
+      "user_input": "t2345",
+      "question": "Please provide a valid PDF or text file path. Please provide a valid PDF or text file path. Please provide the absolute path to your salary PDF document (e.g., C:\\path\\to\\salary_slip.pdf).",
+      "failure_count": 3,
+      "conversation_history": [
+        "System: How much loan amount do you need?",
+        "User: 123456789009876",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 12345678123456",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 1234567890",
+        "System: Please specify the exact loan amount you need for your bike loan.",
+        "User: 3 lakhs",
+        "System: Please provide your PAN or Aadhaar number.",
+        "User: SYFTR4432E",
+        "System: Please provide the path to your salary PDF document.",
+        "User: asd",
+        "System: Please provide a valid PDF or text file path. Please provide the path to your salary PDF document.",
+        "User: er",
+        "System: Please provide a valid PDF or text file path. Please provide a valid PDF or text file path. Please provide the path to your salary PDF document.",
+        "User: sdcfv",
+        "System: Please provide the absolute path to your salary PDF document (e.g., C:\\path\\to\\salary_slip.pdf).",
+        "User: asdf",
+        "System: Please provide a valid PDF or text file path. Please provide the absolute path to your salary PDF document (e.g., C:\\path\\to\\salary_slip.pdf).",
+        "User: wer",
+        "System: Please provide a valid PDF or text file path. Please provide a valid PDF or text file path. Please provide the absolute path to your salary PDF document (e.g., C:\\path\\to\\salary_slip.pdf).",
+        "User: t2345"
+      ],
+      "error_message": "Please provide a valid PDF or text file path.",
+      "escalated_from": "orchestrator"
+    },
+    "status": "resolved",
+    "priority": "MEDIUM",
+    "human_response": "qwertyuisdfghjcvbnmiuytre",
+    "resolved_at": "2025-07-02T12:56:11.531033"
+  },
+  "esc_1751450699_6": {
+    "escalation_id": "esc_1751450699_6",
+    "timestamp": "2025-07-02T15:34:59.392211",
+    "context": {
+      "agent_name": "UserInteractionAgent",
+      "user_input": "edf",
+      "question": "Please respond with 'yes' or 'no'. Please respond with 'yes' or 'no'. Please confirm: Do you want to update your salary information? (yes/no)",
+      "failure_count": 3,
+      "conversation_history": [
+        "System: How much loan amount do you need?",
+        "User: 2 lakh",
+        "System: Please provide your PAN or Aadhaar number.",
+        "User: JLDOD8737N",
+        "System: Do you want to update your salary information? (yes/no)",
+        "User: nodfghj",
+        "System: Please confirm: Do you want to update your salary information? (yes/no)",
+        "User: asd",
+        "System: Please respond with 'yes' or 'no'. Please confirm: Do you want to update your salary information? (yes/no)",
+        "User: asdcf",
+        "System: Please respond with 'yes' or 'no'. Please respond with 'yes' or 'no'. Please confirm: Do you want to update your salary information? (yes/no)",
+        "User: edf"
+      ],
+      "error_message": "Please respond with 'yes' or 'no'.",
+      "escalated_from": "orchestrator"
+    },
+    "status": "resolved",
+    "priority": "MEDIUM",
+    "human_response": "hello this is human agent here enter your amount clearly",
+    "resolved_at": "2025-07-02T15:36:58.172691"
+  },
+  "esc_1751454419_7": {
+    "escalation_id": "esc_1751454419_7",
+    "timestamp": "2025-07-02T16:36:59.023529",
+    "context": {
+      "agent_name": "UserInteractionAgent",
+      "user_input": "2345654738291012934",
+      "question": "Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+      "failure_count": 3,
+      "conversation_history": [
+        "System: How much loan amount do you need?",
+        "User: 4567849265",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 234567892345784",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 2345654738291012934"
+      ],
+      "error_message": "Loan amount too large. Maximum is \u20b91,00,00,000.",
+      "escalated_from": "orchestrator"
+    },
+    "status": "resolved",
+    "priority": "MEDIUM",
+    "human_response": "enter the small amount",
+    "resolved_at": "2025-07-02T16:37:26.291106"
+  },
+  "esc_1751454588_8": {
+    "escalation_id": "esc_1751454588_8",
+    "timestamp": "2025-07-02T16:39:48.032476",
+    "context": {
+      "agent_name": "UserInteractionAgent",
+      "user_input": "2345676432123456",
+      "question": "Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+      "failure_count": 3,
+      "conversation_history": [
+        "System: How much loan amount do you need?",
+        "User: 45665432123456",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 2345676543213567",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 2345676432123456"
+      ],
+      "error_message": "Loan amount too large. Maximum is \u20b91,00,00,000.",
+      "escalated_from": "orchestrator"
+    },
+    "status": "resolved",
+    "priority": "MEDIUM",
+    "human_response": "enter the lower amount",
+    "resolved_at": "2025-07-02T16:40:13.219828"
+  },
+  "esc_1751458758_9": {
+    "escalation_id": "esc_1751458758_9",
+    "timestamp": "2025-07-02T17:49:18.381556",
+    "context": {
+      "agent_name": "UserInteractionAgent",
+      "user_input": "1234567887",
+      "question": "Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+      "failure_count": 3,
+      "conversation_history": [
+        "System: How much loan amount do you need?",
+        "User: 12345678",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 123456789098765",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 1234567887"
+      ],
+      "error_message": "Loan amount too large. Maximum is \u20b91,00,00,000.",
+      "escalated_from": "orchestrator"
+    },
+    "status": "resolved",
+    "priority": "MEDIUM",
+    "human_response": "please enter lower amount",
+    "resolved_at": "2025-07-02T17:49:53.641789"
+  },
+  "esc_1751459331_10": {
+    "escalation_id": "esc_1751459331_10",
+    "timestamp": "2025-07-02T17:58:51.959682",
+    "context": {
+      "agent_name": "UserInteractionAgent",
+      "user_input": "7 crores",
+      "question": "Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+      "failure_count": 3,
+      "conversation_history": [
+        "System: How much loan amount do you need?",
+        "User: 324567890987698",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 654324567898",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 7 crores"
+      ],
+      "error_message": "Loan amount too large. Maximum is \u20b91,00,00,000.",
+      "escalated_from": "orchestrator"
+    },
+    "status": "resolved",
+    "priority": "MEDIUM",
+    "human_response": "enter the small amount",
+    "resolved_at": "2025-07-02T18:01:10.111191"
+  }
+}
