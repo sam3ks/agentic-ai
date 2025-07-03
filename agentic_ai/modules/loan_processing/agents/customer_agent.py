@@ -1,3 +1,4 @@
+
 import random
 import os
 from agentic_ai.core.agent.base_agent import BaseAgent
@@ -7,21 +8,29 @@ class CustomerAgent(BaseAgent):
     Automated agent that mimics a user by providing required details (purpose, amount, city, PAN/Aadhaar)
     to the loan processing workflow. Useful for automation, testing, and demos.
     """
-    
+
     def __init__(self, profile=None):
         super().__init__()
-        # Default or custom profile for the customer
         self.profile = profile or self._generate_random_profile()
-        self.step = 0  # Track which info to provide next
-        # Add agreement response preference (can be customized per customer)
-        self.agreement_response_preference = "accept"  # "accept", "decline", or "random"
+        self.step = 0
+        self.agreement_response_preference = "accept"
+        self._reset_answer_flags()
+
+    def _reset_answer_flags(self):
+        self._answered_purpose = False
+        self._answered_amount = False
+        self._answered_city = False
+        self._answered_identifier = False
+        self._answered_salary_update = False
+        self._answered_pdf_path = False
+        self._answered_agreement = False
+        self._answered_pan_after_aadhaar = False
+        self._last_salary_update_response = None
+        self._last_question = None
 
     def _generate_random_profile(self):
-        # Generate a random but valid customer profile
         purposes = ["home renovation", "education", "wedding", "business expansion", "medical"]
         cities = ["Mumbai", "Delhi", "Bangalore", "Chennai", "Kolkata"]
-        
-        # Create paired PAN and Aadhaar numbers (from the ACTUAL dataset)
         user_profiles = [
             {"pan": "NAMWT4886W", "aadhaar": "631999289535"},
             {"pan": "AASIL9982X", "aadhaar": "263955468941"},
@@ -37,14 +46,8 @@ class CustomerAgent(BaseAgent):
             {"pan": "AJTHJ4957H", "aadhaar": "225812783128"},
             {"pan": "JPYVM1461B", "aadhaar": "324444958446"}
         ]
-        
-        # Select a random user profile
         selected_profile = random.choice(user_profiles)
-        
-        # FOR TESTING AADHAAR-FIRST FLOW: Always use Aadhaar as the initial identifier
-        # This will force the system to ask for PAN later for credit score verification
-        identifier = selected_profile["aadhaar"]  # Always start with Aadhaar
-        
+        identifier = selected_profile["aadhaar"]
         return {
             "purpose": random.choice(purposes),
             "amount": str(random.choice([100000, 250000, 500000, 750000, 1000000])),
@@ -55,23 +58,31 @@ class CustomerAgent(BaseAgent):
         }
 
     def reset_state(self):
-        """Resets the state of the agent (for compatibility with orchestrator)."""
-        self.step = 0
-        self._answered_purpose = False
-        self._answered_amount = False
-        self._answered_city = False
-        self._answered_identifier = False
-        self._answered_salary_update = False
-        self._answered_pdf_path = False
-        self._answered_agreement = False  # Track agreement response
-        self._answered_pan_after_aadhaar = False  # Track PAN request after Aadhaar
-        self._last_salary_update_response = None
+        self._reset_answer_flags()
+
+    def update_profile(self, updates: dict):
+        if not self.profile:
+            self.profile = {}
+        for k, v in (updates or {}).items():
+            if v and v != "unknown":
+                self.profile[k] = str(v)
+
+    def set_initial_details(self, details: dict):
+        if not self.profile:
+            self.profile = {}
+        for k in ("purpose", "amount", "city"):
+            v = (details or {}).get(k)
+            if v and v != "unknown":
+                self.profile[k] = str(v)
+        if "identifier" in details:
+            self.profile["identifier"] = str(details["identifier"])
 
     def run(self, question: str = None, **kwargs) -> str:
-        """Responds to the system's questions as a user would (compatible signature)."""
         q = (question or "").lower()
-        
-        # Handle agreement acceptance/rejection prompts
+        if self._last_question == q:
+            return "Could you please clarify your question?"
+        self._last_question = q
+
         if self._is_agreement_question(q):
             if not getattr(self, '_answered_agreement', False):
                 self._answered_agreement = True
@@ -79,38 +90,30 @@ class CustomerAgent(BaseAgent):
                 print(f"[CustomerAgent] Agreement question detected. Responding: {response}")
                 return response
             else:
-                # If asked again, return the same response
                 return self._get_agreement_response()
-        
-        # Handle salary update prompt
+
         if ("update" in q and "salary" in q) or ("want to update" in q and "salary" in q):
             if not getattr(self, '_answered_salary_update', False):
                 self._answered_salary_update = True
-                # Randomly decide yes/no, or always yes for demo
                 self._last_salary_update_response = random.choice(["yes", "no"])
                 return self._last_salary_update_response
             else:
                 return self._last_salary_update_response or "yes"
-        
-        # Handle PDF path prompt
+
         if ("pdf" in q or "salary slip" in q or "file path" in q or "document" in q or "provide the path" in q):
             if not getattr(self, '_answered_pdf_path', False):
                 self._answered_pdf_path = True
-                return r"C:\Users\R.Darshan\Downloads\Agentic_AI_main_v8 (1)\Agentic_AI_main_v8\Agentic_AI_main_v5\agentic-ai-main\agentic_ai\sample_salarypdf_template.pdf"
+                pdf_path = r"sample_salarypdf_template.pdf"
+                return pdf_path if os.path.exists(pdf_path) else "Sorry, I can't find the file. Please specify another path."
             else:
-                return r"C:\Users\R.Darshan\Downloads\Agentic_AI_main_v8 (1)\Agentic_AI_main_v8\Agentic_AI_main_v5\agentic-ai-main\agentic_ai\sample_salarypdf_template.pdf"
-        
-        # Handle NEW FLOW: PAN request after Aadhaar (credit score verification)
-        # Be more specific to avoid matching general identifier requests
+                return r"sample_salarypdf_template.pdf"
+
         if (("pan number" in q and ("credit score" in q or "verification" in q)) or 
-           ("pan number required" in q) or 
-           ("pan number to fetch" in q) or
-           ("pan for credit" in q)) and "aadhaar" not in q:
-            # This is the new flow where system asks for PAN after Aadhaar for credit score
+            ("pan number required" in q) or 
+            ("pan number to fetch" in q) or
+            ("pan for credit" in q)) and "aadhaar" not in q:
             if not getattr(self, '_answered_pan_after_aadhaar', False):
                 self._answered_pan_after_aadhaar = True
-                
-                # Smart PAN mapping: Use database mappings for known Aadhaar numbers
                 aadhaar_to_pan_mapping = {
                     "631999289535": "NAMWT4886W",
                     "263955468941": "AASIL9982X", 
@@ -126,19 +129,11 @@ class CustomerAgent(BaseAgent):
                     "225812783128": "AJTHJ4957H",
                     "324444958446": "JPYVM1461B"
                 }
-                
-                # Check if we can find the Aadhaar from our profile or use smart mapping
-                current_aadhaar = self.profile.get("aadhaar", self.profile.get("identifier"))
-                if current_aadhaar in aadhaar_to_pan_mapping:
-                    pan_to_return = aadhaar_to_pan_mapping[current_aadhaar]
-                else:
-                    # Fallback to profile PAN
-                    pan_to_return = self.profile.get("pan", "ABCDE1234F")
-                
+                current_aadhaar = str(self.profile.get("aadhaar", self.profile.get("identifier")))
+                pan_to_return = aadhaar_to_pan_mapping.get(current_aadhaar, self.profile.get("pan", "ABCDE1234F"))
                 print(f"[CustomerAgent] System requesting PAN for credit score verification. Providing: {pan_to_return}")
-                return pan_to_return
+                return str(pan_to_return)
             else:
-                # Return the same PAN if asked again (use same logic)
                 aadhaar_to_pan_mapping = {
                     "631999289535": "NAMWT4886W",
                     "263955468941": "AASIL9982X", 
@@ -154,64 +149,50 @@ class CustomerAgent(BaseAgent):
                     "225812783128": "AJTHJ4957H",
                     "324444958446": "JPYVM1461B"
                 }
-                current_aadhaar = self.profile.get("aadhaar", self.profile.get("identifier"))
-                if current_aadhaar in aadhaar_to_pan_mapping:
-                    return aadhaar_to_pan_mapping[current_aadhaar]
-                else:
-                    return self.profile.get("pan", "ABCDE1234F")
-        
-        # Handle PAN/Aadhaar/identifier requests (original flow)
-        if "pan" in q or "aadhaar" in q or "identifier" in q:
-            if not getattr(self, '_answered_identifier', False):
+                current_aadhaar = str(self.profile.get("aadhaar", self.profile.get("identifier")))
+                return str(aadhaar_to_pan_mapping.get(current_aadhaar, self.profile.get("pan", "ABCDE1234F")))
+
+        # If the system asks for PAN (by format or explicit keyword), return PAN
+        if ("pan" in q and ("number" in q or "pan" in q or "ABCDE1234F" in q)) or ("pan or aadhaar" in q):
+            # Always use the PAN from the generated profile if available
+            pan_value = self.profile.get("pan")
+            if pan_value and pan_value != "ABCDE1234F":
                 self._answered_identifier = True
-                return self.profile.get("identifier", "ABCDE1234F")
+                return str(pan_value)
             else:
-                return self.profile.get("identifier", "ABCDE1234F")
-        
-        # Handle purpose (always return the same purpose for the session)
+                # fallback only if profile PAN is missing
+                self._answered_identifier = True
+                return "ABCDE1234F"
+        # If the system asks for Aadhaar specifically
+        if "aadhaar" in q and not "pan" in q:
+            return str(self.profile.get("aadhaar", "123456789012"))
+        # If the system asks for identifier in a generic way, return identifier
+        if "identifier" in q:
+            return str(self.profile.get("identifier", "ABCDE1234F"))
+
         if "purpose" in q:
-            return self.profile.get("purpose", "personal expenses")
-        
-        # Handle amount
+            return str(self.profile.get("purpose", "personal expenses"))
+
         if "amount" in q:
             if not getattr(self, '_answered_amount', False):
                 self._answered_amount = True
-                return self.profile.get("amount", "100000")
+                return str(self.profile.get("amount", "100000"))
             else:
-                return self.profile.get("amount", "100000")
-        
-        # Handle city
+                return str(self.profile.get("amount", "100000"))
+
         if "city" in q:
             if not getattr(self, '_answered_city', False):
                 self._answered_city = True
-                return self.profile.get("city", "Mumbai")
+                return str(self.profile.get("city", "Mumbai"))
             else:
-                return self.profile.get("city", "Mumbai")
-        
-        # Default: return a random value
-        return random.choice(list(self.profile.values()))
-    
-    def set_initial_details(self, details: dict):
-        """Sets the initial details extracted from the user's first message (for compatibility).
-        Ensures the agent's profile matches the initial request for consistency."""
-        if not self.profile:
-            self.profile = {}
-        # Always override profile with initial details if present and valid
-        for k in ("purpose", "amount", "city"):
-            v = (details or {}).get(k)
-            if v and v != "unknown":
-                self.profile[k] = v
-        # Identifier is not always in the initial request, so keep as is if not present
-        if "identifier" in details:
-            self.profile["identifier"] = details["identifier"]
+                return str(self.profile.get("city", "Mumbai"))
+
+        return "Sorry, could you please clarify your question?"
 
     def handle_user_input(self, question: str) -> str:
-        """Handles user interaction by mimicking user input for automation."""
-        # This agent does not prompt, it just returns the appropriate value
         return self.run(question)
 
     def _is_agreement_question(self, question: str) -> bool:
-        """Detects if the question is asking for agreement acceptance/rejection."""
         agreement_keywords = [
             "do you agree", "accept the terms", "loan agreement", "terms and conditions",
             "please accept", "please decline", "agreement", "i agree", "i decline",
@@ -220,7 +201,6 @@ class CustomerAgent(BaseAgent):
         return any(keyword in question.lower() for keyword in agreement_keywords)
 
     def _get_agreement_response(self) -> str:
-        """Returns the agreement response based on the customer's preference."""
         if self.agreement_response_preference == "accept":
             return "I AGREE"
         elif self.agreement_response_preference == "decline":
@@ -228,15 +208,9 @@ class CustomerAgent(BaseAgent):
         elif self.agreement_response_preference == "random":
             return random.choice(["I AGREE", "I DECLINE"])
         else:
-            # Default to accept
             return "I AGREE"
 
     def set_agreement_preference(self, preference: str):
-        """Set the customer's agreement response preference.
-        
-        Args:
-            preference: "accept", "decline", or "random"
-        """
         if preference in ["accept", "decline", "random"]:
             self.agreement_response_preference = preference
         else:

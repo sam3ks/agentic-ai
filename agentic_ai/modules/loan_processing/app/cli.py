@@ -28,11 +28,6 @@ def process_loan_application(user_request: str, automate_user: bool = False, cus
     
     result = orchestrator.process_application(user_request)
     
-    # Post-process output for Indian comma formatting
-    if hasattr(orchestrator, 'postprocess_output'):
-        result = orchestrator.postprocess_output(result)
-    elif hasattr(BaseAgent, 'postprocess_output'):
-        result = BaseAgent().postprocess_output(result)
     
     print(f"\n{'='*60}")
     print("✅ PROCESSING COMPLETE")

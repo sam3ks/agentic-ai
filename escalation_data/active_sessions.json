@@ -275,5 +275,55 @@
     "priority": "MEDIUM",
     "human_response": "enter the small amount",
     "resolved_at": "2025-07-02T18:01:10.111191"
+  },
+  "esc_1751523662_11": {
+    "escalation_id": "esc_1751523662_11",
+    "timestamp": "2025-07-03T11:51:02.322078",
+    "context": {
+      "agent_name": "UserInteractionAgent",
+      "user_input": "12345677654321",
+      "question": "Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+      "failure_count": 3,
+      "conversation_history": [
+        "System: How much loan amount do you need?",
+        "User: 1234567854321",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 123456787654321",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 12345677654321"
+      ],
+      "error_message": "Loan amount too large. Maximum is \u20b91,00,00,000.",
+      "escalated_from": "orchestrator"
+    },
+    "status": "resolved",
+    "priority": "MEDIUM",
+    "human_response": "PLease enter the amount appropritely this will not accepetd by our bank",
+    "resolved_at": "2025-07-03T11:52:17.802449"
+  },
+  "esc_1751525159_12": {
+    "escalation_id": "esc_1751525159_12",
+    "timestamp": "2025-07-03T12:15:59.207685",
+    "context": {
+      "agent_name": "UserInteractionAgent",
+      "user_input": "347676851687",
+      "question": "Please provide a valid PAN number (format: ABCDE1234F). Please provide a valid PAN number (format: ABCDE1234F). Please provide your PAN or Aadhaar number.",
+      "failure_count": 3,
+      "conversation_history": [
+        "System: What is the purpose of your loan?",
+        "User: medical emergency",
+        "System: Please provide your PAN or Aadhaar number.",
+        "User: 347676851687",
+        "System: Please provide a valid PAN number (format: ABCDE1234F). Please provide your PAN or Aadhaar number.",
+        "User: 347676851687",
+        "System: Please provide a valid PAN number (format: ABCDE1234F). Please provide a valid PAN number (format: ABCDE1234F). Please provide your PAN or Aadhaar number.",
+        "User: 347676851687"
+      ],
+      "error_message": "Please provide a valid PAN number (format: ABCDE1234F).",
+      "escalated_from": "orchestrator"
+    },
+    "status": "resolved",
+    "priority": "MEDIUM",
+    "human_response": "why pan number",
+    "resolved_at": "2025-07-03T12:16:19.315698"
   }
 }

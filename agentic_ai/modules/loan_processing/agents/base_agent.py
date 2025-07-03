@@ -22,10 +22,10 @@ class BaseAgent:
     def postprocess_output(self, text: str) -> str:
         # Replace all international formatted numbers (with or without rupee symbol) with Indian comma style
         def replace_with_indian_currency(match):
-            num = int(match.group(1).replace(",", ""))
+            num = int(match.group(2).replace(",", ""))
             return format_indian_currency_without_decimal(num)
 
         # Replace patterns like ₹12,345,678 or 12,345,678
-        text = re.sub(r"₹?(\d{1,3}(?:,\d{3})+|\d{7,})", replace_with_indian_currency, text)
+        text = re.sub(r"(₹?)(\d{1,3}(?:,\d{3}){2,}|\d{7,})(?!,\d{2},\d{3})", replace_with_indian_currency, text)
         return text
 
