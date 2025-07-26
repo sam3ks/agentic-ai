@@ -1,7 +1,14 @@
 import time
+import os
+import httpx
 from typing import List, Optional, Dict, Any
 from openai import OpenAI
 from .base import BaseLLM
+
+# Set environment variables for SSL certificate verification
+os.environ['PYTHONHTTPSVERIFY'] = '0'
+os.environ['REQUESTS_CA_BUNDLE'] = ''
+os.environ['CURL_CA_BUNDLE'] = ''
 
 class OpenAILLM(BaseLLM):
     """OpenAI LLM implementation with stricter formatting for ReAct agents."""
@@ -13,8 +20,15 @@ class OpenAILLM(BaseLLM):
     def __init__(self, api_key: str):
         if api_key:
             try:
-                self.openai_client = OpenAI(api_key=api_key)
-                # Print statement removed to avoid multiple messages
+                # Create httpx client with SSL verification disabled
+                httpx_client = httpx.Client(verify=False)
+                
+                # Use the custom client with OpenAI
+                self.openai_client = OpenAI(
+                    api_key=api_key,
+                    http_client=httpx_client
+                )
+                print("✓ OpenAI client initialized with SSL verification disabled")
             except Exception as e:
                 print(f"⚠️ Failed to initialize OpenAI client: {e}")
                 self.openai_client = None
@@ -203,5 +217,28 @@ ALWAYS respond with exact formatting including the words "Thought:", "Action:", 
                 return f"Rate limit reached. Using fallback analysis. Call #{self._call_count}"
             elif "API" in error_msg:
                 return f"API Error: {error_msg}. Using fallback analysis."
+            elif "SSL" in error_msg or "certificate" in error_msg.lower() or "Connection" in error_msg:
+                print(f"⚠️ SSL/Connection error: {error_msg}")
+                print("Retrying with SSL verification disabled...")
+                try:
+                    # Create a new client with SSL verification disabled
+                    httpx_client = httpx.Client(verify=False)
+                    
+                    self.openai_client = OpenAI(
+                        api_key=self.openai_client.api_key,
+                        http_client=httpx_client
+                    )
+                    response = self.openai_client.chat.completions.create(
+                        messages=messages,
+                        model=self.model_name,
+                        temperature=temp,
+                        max_tokens=self.max_tokens,
+                        response_format=response_format,
+                        **kwargs
+                    )
+                    result = response.choices[0].message.content
+                    return result
+                except Exception as retry_e:
+                    return f"SSL Bypass failed: {str(retry_e)}"
             else:
                 return f"Analysis Error: {error_msg}"
