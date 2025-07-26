@@ -9,27 +9,42 @@ from agentic_ai.core.utils.formatting import format_indian_currency_without_deci
 class UserInteractionAgent(BaseAgent):
     """Specialized agent for user interaction."""
  
-    def __init__(self):
-        super().__init__()  # Initialize the LLM
+    def __init__(self, input_provider=None):
+        super().__init__()
+        self.input_provider = input_provider or input  # Default to built-in input()
+        self.is_ui_mode = input_provider is not None and input_provider != input  # Detect UI mode
         self.reset_state()
         # Initialize the city matcher for fuzzy city name matching
         self.city_matcher = CityMatcher(AVAILABLE_CITIES)
         # Define restricted loan purposes that should be rejected
+
         self._restricted_purposes = [
             # Gambling related
-            "gambling", "casino", "betting", "lottery", "poker", "sports betting", "wagering",
+            "gambling", "casino", "betting", "lottery", "poker", "sports betting", "wagering", "bingo", "slot machine", "bookmaker",
+
             # Illegal substances
-            "drugs", "narcotics", "illegal substances", "controlled substances",
+            "drugs", "narcotics", "illegal substances", "controlled substances", "cocaine", "heroin", "meth", "lsd", "ecstasy",
+
             # Weapons
-            "weapons", "firearms", "ammunition", "guns",
-            # Financial risks - keeping only high-risk speculative activities
-            "cryptocurrency", "crypto", "nft",
+            "weapons", "firearms", "ammunition", "guns", "explosives", "bomb", "grenade", "knives", "assault rifle", "chemical weapon",
+
+            # Financial risks - speculative or unregulated activities
+            "cryptocurrency", "crypto", "nft", "token", "ico", "defi", "forex trading", "binary options", "unregulated investment",
+
             # Illegal activities
-            "money laundering", "terrorist", "terrorism", "fraud", "scam", "pyramid scheme", "ponzi",
-            "smuggling", "black market", "counterfeit", "forgery", "bootlegging", "hacking", "cyber attack",
+            "money laundering", "terrorist", "terrorism", "fraud", "scam", "pyramid scheme", "ponzi", "identity theft",
+            "phishing", "smuggling", "black market", "counterfeit", "forgery", "bootlegging", "hacking", "cyber attack",
+            "ransomware", "ddos", "malware", "spyware", "botnet", "data breach",
+
             # Other restricted
-            "bribery", "illegal immigration", "extortion", "ransom"
+            "bribery", "illegal immigration", "extortion", "ransom", "human trafficking", "child exploitation",
+            "hate speech", "incitement to violence",
+
+            # High-risk industries or content
+            "escort service", "adult entertainment", "cam site", "sex trafficking", "dark web", "deep web",
+            "unlicensed pharmaceuticals", "unregulated medicine", "anabolic steroids", "counterfeit goods"
         ]
+
        
         # Define explicitly allowed personal purposes for reference
         self._personal_purpose_examples = [
@@ -53,6 +68,61 @@ class UserInteractionAgent(BaseAgent):
         self._asked_salary_update = False
         self._asked_pdf_path = False
         self.initial_details = {}
+
+    def get_user_input(self, prompt: str) -> str:
+        """
+        Get user input using the configured input provider.
+        In UI mode, this returns the input directly without looping.
+        """
+        return self.input_provider(prompt)
+
+    def _validate_input_with_retry(self, prompt: str, validation_func, error_message: str, max_retries: int = 3):
+        """
+        Helper method for input validation that respects UI mode.
+        In CLI mode: loops until valid input or termination request
+        In UI mode: validates once and returns result with error message if invalid
+        
+        Args:
+            prompt: The prompt to show to user
+            validation_func: Function that takes user input and returns (is_valid, processed_value)
+            error_message: Message to show on validation failure
+            max_retries: Maximum retries in UI mode (to prevent infinite loops)
+        
+        Returns:
+            tuple: (success, value, message) where success is bool, value is the processed input, message is any error/info
+        """
+        retry_count = 0
+        while True:
+            if self.is_ui_mode and retry_count >= max_retries:
+                print(f"[DEBUG] Max retries reached: {retry_count}")
+                return False, None, f"Maximum retries exceeded. {error_message}"
+            user_response = self.get_user_input(prompt).strip()
+            print(f"[DEBUG] User input: '{user_response}' | Retry count: {retry_count}")
+            if self._is_termination_request(user_response):
+                print(f"You have chosen to exit. Exiting the process.")
+                return False, "USER_EXIT", "User requested termination"
+            is_pan_aadhaar = (
+                ("pan" in prompt.lower() or "aadhaar" in prompt.lower())
+                and ("consent" not in prompt.lower() and "accessing and processing" not in prompt.lower())
+            )
+            from agentic_ai.core.utils.validators import is_pan, is_aadhaar
+            if is_pan_aadhaar:
+                # Only skip incrementing retry count for empty input or initial user request
+                if not user_response or user_response.startswith("User:"):
+                    print(f"[DEBUG] Ignoring empty or initial request input for first prompt. Not incrementing retry count.")
+                    prompt = f"Please provide your PAN or Aadhaar number."
+                    continue
+            is_valid, processed_value = validation_func(user_response)
+            print(f"[DEBUG] Validation result: {is_valid}, Value: {processed_value}")
+            if is_valid:
+                return True, processed_value, "Success"
+            else:
+                print(f"{error_message}")
+                if self.is_ui_mode:
+                    print(f"[DEBUG] UI mode: returning error after invalid input.")
+                    return False, None, error_message
+                retry_count += 1
+                print(f"[DEBUG] Incremented retry count: {retry_count}")
  
     def _is_termination_request(self, user_input: str) -> bool:
         """
@@ -249,17 +319,24 @@ REASON: [Brief explanation of your decision]
                 print(f"[DEBUG] Initial city '{details['city']}' could not be matched to a supported city")
                 self.initial_details["city"] = "unknown"
  
+    def get_user_input(self, prompt):
+        return self.input_provider(prompt)
+ 
     def handle_user_input(self, question: str) -> str:
         """Handles user interaction by prompting for actual input, enforcing Aadhaar/PAN/consent flow and color output for consent."""
         try:
             print(f"[DEBUG] UserInteractionAgent received question: {question}")
             from agentic_ai.core.utils.validators import is_pan, is_aadhaar
  
-            # ANSI color codes
-            YELLOW = '\033[93m'
-            GREEN = '\033[92m'
-            RED = '\033[91m'
-            RESET = '\033[0m'
+            # ANSI color codes - only use in CLI mode
+            if not self.is_ui_mode:
+                YELLOW = '\033[93m'
+                GREEN = '\033[92m'
+                RED = '\033[91m'
+                RESET = '\033[0m'
+            else:
+                # No color codes in UI mode
+                YELLOW = GREEN = RED = RESET = ''
  
  
             # Only run the identity/consent flow if not already completed and only at the correct stage
@@ -272,85 +349,130 @@ REASON: [Brief explanation of your decision]
  
             # Only trigger Aadhaar/PAN/consent flow if the question is specifically for Aadhaar or PAN
             if (is_asking_for_aadhaar or is_asking_for_both) and not self._aadhaar_collected:
-                while True:
-                    print(f"{YELLOW}🪪 Please enter your Aadhaar number:{RESET}")
-                    user_response = input(f"{YELLOW}Aadhaar number:{RESET} ").strip()
-                    if self._is_termination_request(user_response):
+                def validate_aadhaar(user_input):
+                    if is_aadhaar(user_input):
+                        return True, user_input
+                    elif is_pan(user_input):
+                        return False, "PAN number cannot be accepted as the first input. Please start with your Aadhaar number."
+                    else:
+                        return False, "Invalid Aadhaar number. Please enter a valid 12-digit Aadhaar number."
+                
+                success, value, message = self._validate_input_with_retry(
+                    f"{YELLOW}🪪 Please enter your Aadhaar number:{RESET}",
+                    validate_aadhaar,
+                    f"{RED}❌ Invalid input. Please check and try again.{RESET}"
+                )
+                
+                if not success:
+                    if value == "USER_EXIT":
                         print(f"{RED}You have chosen to exit. Exiting the process.{RESET}")
                         return "USER_EXIT"
-                    if is_aadhaar(user_response):
-                        self._aadhaar_collected = True
-                        self._aadhaar_number = user_response
-                        break
-                    elif is_pan(user_response):
-                        print(f"{RED}❌ PAN number cannot be accepted as the first input. Please start with your Aadhaar number.{RESET}")
-                    else:
-                        print(f"{RED}❌ Invalid Aadhaar number. Please enter a valid 12-digit Aadhaar number.{RESET}")
+                    elif self.is_ui_mode:
+                        # In UI mode, return error message to let UI handle it
+                        return f"ERROR: {message}"
+                else:
+                    self._aadhaar_collected = True
+                    self._aadhaar_number = value
  
             if (is_asking_for_aadhaar or is_asking_for_both) and self._aadhaar_collected and not self._aadhaar_consent:
-                while True:
-                    print(f"{YELLOW}🔒 Do you consent to us accessing and processing your Aadhaar-linked information? (yes/no){RESET}")
-                    consent = input(f"{YELLOW}Consent for Aadhaar (yes/no):{RESET} ").strip().lower()
-                    if self._is_termination_request(consent):
+                def validate_consent(user_input):
+                    consent = user_input.lower()
+                    if consent in ["yes", "y"]:
+                        return True, True
+                    elif consent in ["no", "n"]:
+                        return True, False
+                    else:
+                        return False, "Please answer 'yes' or 'no'."
+                
+                success, value, message = self._validate_input_with_retry(
+                    f"{YELLOW}🔒 Do you consent to us accessing and processing your Aadhaar-linked information? (yes/no){RESET}",
+                    validate_consent,
+                    f"{YELLOW}Please answer 'yes' or 'no'.{RESET}"
+                )
+                
+                if not success:
+                    if value == "USER_EXIT":
                         print(f"{RED}You have chosen to exit. Exiting the process.{RESET}")
                         return "USER_EXIT"
-                    if consent in ["yes", "y"]:
+                    elif self.is_ui_mode:
+                        return f"ERROR: {message}"
+                else:
+                    if value:
                         print(f"{GREEN}✅ Consent received for Aadhaar processing.{RESET}")
                         self._aadhaar_consent = True
-                        break
-                    elif consent in ["no", "n"]:
+                    else:
                         print(f"{RED}Consent not given. The process will be terminated.{RESET}")
                         return "USER_EXIT"
-                    else:
-                        print(f"{YELLOW}Please answer 'yes' or 'no'.{RESET}")
  
  
             if (is_asking_for_pan or is_asking_for_both) and self._aadhaar_collected and self._aadhaar_consent and not self._pan_collected:
-                while True:
-                    print(f"{YELLOW}📝 Please enter your PAN number:{RESET}")
-                    user_response = input(f"{YELLOW}PAN number:{RESET} ").strip()
-                    if self._is_termination_request(user_response):
-                        print(f"{RED}You have chosen to exit. Exiting the process.{RESET}")
-                        return "USER_EXIT"
-                    if is_pan(user_response):
+                def validate_pan(user_input):
+                    if is_pan(user_input):
                         # SECURITY CHECK: Ensure PAN matches the one linked to the Aadhaar
-                        # Only perform this if Aadhaar is already collected
                         try:
                             from agentic_ai.modules.loan_processing.services.loan_data_service import LoanDataService
                             data_service = LoanDataService()
                             user_row = data_service.df[data_service.df['aadhaar_number'] == self._aadhaar_number]
                             if not user_row.empty:
                                 expected_pan = user_row.iloc[0]['pan_number']
-                                if expected_pan.upper().strip() != user_response.upper().strip():
-                                    print(f"{RED}❌ SECURITY ALERT: The PAN you entered does not match the PAN linked to your Aadhaar. Please check and enter the correct PAN. The process will be terminated for your security.{RESET}")
-                                    return "USER_EXIT"
+                                if expected_pan.upper().strip() != user_input.upper().strip():
+                                    return False, "SECURITY ALERT: The PAN you entered does not match the PAN linked to your Aadhaar. Please check and enter the correct PAN. The process will be terminated for your security."
+                            return True, user_input
                         except Exception as e:
-                            print(f"{RED}⚠️ Security check failed: {e}{RESET}")
-                            return "USER_EXIT"
-                        self._pan_collected = True
-                        self._pan_number = user_response
-                        break
-                    elif is_aadhaar(user_response):
-                        print(f"{RED}❌ Aadhaar number already provided. Please enter your PAN number now.{RESET}")
+                            return False, f"Security check failed: {e}"
+                    elif is_aadhaar(user_input):
+                        return False, "Aadhaar number already provided. Please enter your PAN number now."
                     else:
-                        print(f"{RED}❌ Invalid PAN number. Please enter a valid PAN (e.g., ABCDE1234F).{RESET}")
- 
-            if (is_asking_for_pan or is_asking_for_both) and self._aadhaar_collected and self._aadhaar_consent and self._pan_collected and not self._pan_consent:
-                while True:
-                    print(f"{YELLOW}🔒 Do you consent to us accessing and processing your PAN-linked data (financial details, credit score, etc.)? (yes/no){RESET}")
-                    consent = input(f"{YELLOW}Consent for PAN (yes/no):{RESET} ").strip().lower()
-                    if self._is_termination_request(consent):
+                        return False, "Invalid PAN number. Please enter a valid PAN (e.g., ABCDE1234F)."
+                
+                success, value, message = self._validate_input_with_retry(
+                    f"{YELLOW}📝 Please enter your PAN number:{RESET}",
+                    validate_pan,
+                    f"{RED}❌ Invalid input. Please check and try again.{RESET}"
+                )
+                
+                if not success:
+                    if value == "USER_EXIT":
                         print(f"{RED}You have chosen to exit. Exiting the process.{RESET}")
                         return "USER_EXIT"
+                    elif "SECURITY ALERT" in message:
+                        print(f"{RED}❌ {message}{RESET}")
+                        return "USER_EXIT"
+                    elif self.is_ui_mode:
+                        return f"ERROR: {message}"
+                else:
+                    self._pan_collected = True
+                    self._pan_number = value
+ 
+            if (is_asking_for_pan or is_asking_for_both) and self._aadhaar_collected and self._aadhaar_consent and self._pan_collected and not self._pan_consent:
+                def validate_pan_consent(user_input):
+                    consent = user_input.lower()
                     if consent in ["yes", "y"]:
+                        return True, True
+                    elif consent in ["no", "n"]:
+                        return True, False
+                    else:
+                        return False, "Please answer 'yes' or 'no'."
+                
+                success, value, message = self._validate_input_with_retry(
+                    f"{YELLOW}🔒 Do you consent to us accessing and processing your PAN-linked data (financial details, credit score, etc.)? (yes/no){RESET}",
+                    validate_pan_consent,
+                    f"{YELLOW}Please answer 'yes' or 'no'.{RESET}"
+                )
+                
+                if not success:
+                    if value == "USER_EXIT":
+                        print(f"{RED}You have chosen to exit. Exiting the process.{RESET}")
+                        return "USER_EXIT"
+                    elif self.is_ui_mode:
+                        return f"ERROR: {message}"
+                else:
+                    if value:
                         print(f"{GREEN}✅ Consent received for PAN processing.{RESET}")
                         self._pan_consent = True
-                        break
-                    elif consent in ["no", "n"]:
+                    else:
                         print(f"{RED}Consent not given. The process will be terminated.{RESET}")
                         return "USER_EXIT"
-                    else:
-                        print(f"{YELLOW}Please answer 'yes' or 'no'.{RESET}")
  
             if (is_asking_for_aadhaar or is_asking_for_pan or is_asking_for_both) and not (self._aadhaar_collected and self._aadhaar_consent and self._pan_collected and self._pan_consent):
                 print(f"{RED}Identity verification and consent sequence not completed. Cannot proceed.{RESET}")
@@ -406,69 +528,113 @@ REASON: [Brief explanation of your decision]
             # Ask city with fuzzy validation
             if is_required_city:
                 city_list_str = ", ".join(AVAILABLE_CITIES)
-                while True:
-                    print(f"{YELLOW}🤔 {question} (Available options: {city_list_str}){RESET}")
-                    user_response = input(f"{YELLOW}Your response:{RESET} ").strip()
-                    if not user_response:
-                        print(f"{RED}⚠️ City is required.{RESET}")
-                        continue
-                    matched_city, score = self.city_matcher.get_closest_match(user_response)
+                
+                def validate_city(user_input):
+                    if not user_input:
+                        return False, "City is required."
+                    matched_city, score = self.city_matcher.get_closest_match(user_input)
                     if matched_city:
                         if score == 100:
                             print(f"{GREEN}✓ Recognized city: {matched_city}{RESET}")
                         else:
-                            print(f"{GREEN}✓ Recognized '{user_response}' as '{matched_city}' (match score: {score}%){RESET}")
-                        return matched_city
+                            print(f"{GREEN}✓ Recognized '{user_input}' as '{matched_city}' (match score: {score}%){RESET}")
+                        return True, matched_city
                     elif score > 50:
-                        print(f"{YELLOW}⚠️ Did you mean one of our supported cities? Your entry '{user_response}' was not recognized.{RESET}")
-                        print(f"{YELLOW}⚠️ Available options: {city_list_str}{RESET}")
+                        return False, f"Did you mean one of our supported cities? Your entry '{user_input}' was not recognized. Available options: {city_list_str}"
                     else:
-                        print(f"{RED}⚠️ Invalid city. Please select from: {city_list_str}{RESET}")
+                        return False, f"Invalid city. Please select from: {city_list_str}"
+                
+                success, value, message = self._validate_input_with_retry(
+                    f"{YELLOW}🤔 {question} (Available options: {city_list_str}){RESET}",
+                    validate_city,
+                    f"{RED}⚠️ Invalid city selection.{RESET}"
+                )
+                
+                if not success:
+                    if value == "USER_EXIT":
+                        print(f"{RED}You have chosen to exit. Exiting the process.{RESET}")
+                        return "USER_EXIT"
+                    elif self.is_ui_mode:
+                        return f"ERROR: {message}"
+                else:
+                    return value
  
             elif is_required_loan_purpose:
-                while True:
-                    print(f"{YELLOW}🤔 {question} (You can leave this process anytime if you wish){RESET}")
-                    user_response = input(f"{YELLOW}Your response:{RESET} ").strip()
-                    if self._is_termination_request(user_response):
+                def validate_purpose(user_input):
+                    if not user_input or user_input.lower() in ["need", "want", "anything"]:
+                        return False, "Please provide a clear loan purpose like 'home renovation', 'medical', etc."
+                    if any(term in user_input.lower() for term in ["illegal", "drugs", "weapons", "terrorism"]):
+                        return False, "Please provide a legal and acceptable loan purpose."
+                    return True, user_input
+                
+                success, value, message = self._validate_input_with_retry(
+                    f"{YELLOW}🤔 {question} (You can leave this process anytime if you wish){RESET}",
+                    validate_purpose,
+                    f"{RED}⚠️ Invalid loan purpose.{RESET}"
+                )
+                
+                if not success:
+                    if value == "USER_EXIT":
                         print(f"{RED}You have chosen to exit. Exiting the process.{RESET}")
                         return "USER_EXIT"
-                    if not user_response or user_response.lower() in ["need", "want", "anything"]:
-                        print(f"{RED}⚠️ Please provide a clear loan purpose like 'home renovation', 'medical', etc.{RESET}")
-                        continue
-                    if any(term in user_response.lower() for term in ["illegal", "drugs", "weapons", "terrorism"]):
-                        print(f"{RED}⚠️ Please provide a legal and acceptable loan purpose.{RESET}")
-                        continue
-                    return user_response
+                    elif self.is_ui_mode:
+                        return f"ERROR: {message}"
+                else:
+                    return value
  
             elif is_required_loan_amount:
-                while True:
-                    print(f"{YELLOW}🤔 {question} (Please enter a numeric value, or type 'stop' to exit){RESET}")
-                    user_response = input(f"{YELLOW}Your response:{RESET} ").strip()
-                    if self._is_termination_request(user_response):
+                def validate_amount(user_input):
+                    if not user_input:
+                        return False, "Loan amount is required."
+                    if not re.search(r'\d+', user_input):
+                        return False, "Please enter a number."
+                    return True, user_input
+                
+                success, value, message = self._validate_input_with_retry(
+                    f"{YELLOW}🤔 {question} (Please enter a numeric value, or type 'stop' to exit){RESET}",
+                    validate_amount,
+                    f"{RED}⚠️ Invalid loan amount.{RESET}"
+                )
+                
+                if not success:
+                    if value == "USER_EXIT":
                         print(f"{RED}You have chosen to exit. Exiting the process.{RESET}")
                         return "USER_EXIT"
-                    if not user_response:
-                        print(f"{RED}⚠️ Loan amount is required.{RESET}")
-                        continue
-                    if not re.search(r'\d+', user_response):
-                        print(f"{RED}⚠️ Please enter a number.{RESET}")
-                        continue
-                    return user_response
+                    elif self.is_ui_mode:
+                        return f"ERROR: {message}"
+                else:
+                    return value
  
             elif is_pdf_path_query:
-                print(f"{YELLOW}🤔 {question}{RESET}")
-                user_response = input(f"{YELLOW}Your response:{RESET} ").strip()
-                if user_response and (user_response.lower().endswith(".pdf") or user_response.lower().endswith(".txt")):
-                    if not os.path.exists(user_response):
-                        print(f"{YELLOW}⚠️ Warning: File does not exist.{RESET}")
-                    return user_response
+                def validate_pdf_path(user_input):
+                    if user_input and (user_input.lower().endswith(".pdf") or user_input.lower().endswith(".txt")):
+                        # In UI mode, be more lenient with file paths - let the PDF extractor handle it
+                        if self.is_ui_mode:
+                            return True, user_input
+                        # In CLI mode, check if file exists
+                        if not os.path.exists(user_input):
+                            print(f"{YELLOW}⚠️ Warning: File does not exist.{RESET}")
+                        return True, user_input
+                    else:
+                        return False, "Please provide a valid .pdf or .txt file path."
+                
+                success, value, message = self._validate_input_with_retry(
+                    f"{YELLOW}🤔 {question}{RESET}",
+                    validate_pdf_path,
+                    f"{RED}⚠️ Please provide a valid PDF or text file path.{RESET}"
+                )
+                
+                if not success:
+                    if value == "USER_EXIT":
+                        print(f"{RED}You have chosen to exit. Exiting the process.{RESET}")
+                        return "USER_EXIT"
+                    elif self.is_ui_mode:
+                        return f"ERROR: {message}"
                 else:
-                    print(f"{RED}⚠️ Please provide a valid .pdf or .txt file path.{RESET}")
-                    return user_response
+                    return value
  
             # Fallback for any other question
-            print(f"{YELLOW}🤔 {question}{RESET}")
-            return input(f"{YELLOW}Your response:{RESET} ").strip()
+            return self.get_user_input(f"{YELLOW}🤔 {question}{RESET}")
  
         except Exception as e:
             print(f"[ERROR] UserInteractionAgent failed: {str(e)}")

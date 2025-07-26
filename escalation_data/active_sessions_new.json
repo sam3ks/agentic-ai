@@ -1,0 +1,48 @@
+{
+  "esc_1752573139_0": {
+    "escalation_id": "esc_1752573139_0",
+    "timestamp": "2025-07-15T15:22:19.843516",
+    "context": {
+      "agent_name": "UserInteractionAgent",
+      "user_input": "7867645342312456789",
+      "question": "Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+      "failure_count": 3,
+      "conversation_history": [
+        "System: How much loan amount do you need?",
+        "User: 100000000000000000000",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 100000000000000000000000000",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 7867645342312456789"
+      ],
+      "error_message": "Loan amount too large. Maximum is \u20b91,00,00,000.",
+      "escalated_from": "orchestrator"
+    },
+    "status": "waiting_for_human",
+    "priority": "MEDIUM"
+  },
+  "esc_1752574017_1": {
+    "escalation_id": "esc_1752574017_1",
+    "timestamp": "2025-07-15T15:36:57.409948",
+    "context": {
+      "agent_name": "UserInteractionAgent",
+      "user_input": "1000000000000",
+      "question": "Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+      "failure_count": 3,
+      "conversation_history": [
+        "System: How much loan amount do you need?",
+        "User: 10000000000",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 100000000000",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+        "User: 1000000000000"
+      ],
+      "error_message": "Loan amount too large. Maximum is \u20b91,00,00,000.",
+      "escalated_from": "orchestrator"
+    },
+    "status": "timeout",
+    "priority": "MEDIUM",
+    "timeout_at": "2025-07-15T15:41:58.327603"
+  }
+}
+ 

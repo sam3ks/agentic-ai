@@ -6,5 +6,6 @@ AVAILABLE_CITIES = [
     'Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata',
     'Hyderabad', 'Pune', 'Ahmedabad', 'Surat', 'Jaipur'
 ]
-DATASET_PATH = 'agentic_ai/modules/loan_processing/data/sample_loans.csv'
+import os
+DATASET_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'modules', 'loan_processing', 'data', 'sample_loans.csv'))
 PROMPT_TEMPLATE_PATH = 'agentic_ai/modules/loan_processing/prompts/loan_prompt_template.txt'

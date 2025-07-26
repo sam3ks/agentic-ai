@@ -209,15 +209,16 @@ class AgreementAgent(BaseAgent):
         else:                         # < 1 lakh
             return -12 # Much shorter for very small amounts
     
-    def present_agreement(self, loan_details: str) -> str:
+    def present_agreement(self, loan_details: str, selected_tenure: int = None) -> dict:
         """
-        Present the loan agreement with terms and conditions.
+        Present the loan agreement with terms and conditions, and return max tenure.
         
         Args:
             loan_details: JSON string containing loan approval details
-            
+            selected_tenure: Optional user-selected tenure (in months)
+        
         Returns:
-            Formatted agreement for user review
+            Dict with agreement text, max tenure, and used tenure
         """
         try:
             # Parse the loan details
@@ -225,11 +226,10 @@ class AgreementAgent(BaseAgent):
                 try:
                     details = json.loads(loan_details)
                 except json.JSONDecodeError:
-                    # If not JSON, treat as simple text and extract basic info
                     details = self._extract_details_from_text(loan_details)
             else:
                 details = loan_details
-            
+
             # Extract key information
             loan_amount = details.get('loan_amount', 0)
             interest_rate_raw = details.get('interest_rate', 12.0)
@@ -259,9 +259,18 @@ class AgreementAgent(BaseAgent):
             if credit_score == 0:  # If credit score is 0, use a safe default
                 credit_score = 650
             
-            # Calculate dynamic tenure based on loan amount, purpose, and credit score
-            num_months = self._calculate_dynamic_tenure(loan_amount, purpose, credit_score, user_details)
-            
+            # Calculate max tenure
+            loan_category = self._classify_loan_type(purpose, self._load_loan_purpose_policy())
+            max_tenure = self._get_max_tenure_by_category(loan_category, loan_amount)
+
+            # Calculate default or selected tenure
+            if selected_tenure is not None:
+                num_months = min(max(selected_tenure, 1), max_tenure)
+            else:
+                # For the first agreement, use the maximum available tenure
+                # This ensures users see the full tenure option available to them
+                num_months = max_tenure
+
             # Calculate EMI and other financial details
             monthly_interest_rate = interest_rate / 100 / 12
             
@@ -296,8 +305,8 @@ LOAN DETAILS:
 • Total Amount Payable: {format_indian_currency_without_decimal(int(emi * num_months))}
 
 REPAYMENT SCHEDULE:
-• First EMI Date: {first_emi_date.strftime('%d-%m-%Y')}
-• Final EMI Date: {final_emi_date.strftime('%d-%m-%Y')}
+• First EMI Date: {first_emi_date.strftime('%d')}th {first_emi_date.strftime('%B %Y')}
+• Final EMI Date: {final_emi_date.strftime('%d')}th {final_emi_date.strftime('%B %Y')}
 • EMI Deduction: Auto-debit from registered bank account
 
 TERMS & CONDITIONS:
@@ -325,27 +334,39 @@ IMPORTANT NOTES:
 • Cooling-off Period: {self.agreement_template['terms']['cooling_off_period']}
 
 ====================================================================
-
-DIGITAL ACCEPTANCE REQUIRED
-By proceeding with digital acceptance, you confirm that:
-1. You have read and understood all terms and conditions
-2. You agree to the repayment schedule and charges
-3. You authorize auto-debit for EMI payments
-4. You will provide all required documentation
-
-To proceed with digital acceptance, please respond with:
-"I AGREE" or "I ACCEPT" - to accept the terms
-"I DECLINE" or "I REJECT" - to decline the loan
-
-Note: This agreement is valid for 48 hours from the date of presentation.
 """
-            
-            return agreement_text
-            
+            return {
+                "agreement_text": agreement_text,
+                "max_tenure": max_tenure,
+                "used_tenure": num_months,
+                "loan_details": details  # Always return the full parsed details
+            }
         except Exception as e:
             logger.error(f"Error presenting agreement: {e}")
-            return f"Error presenting loan agreement: {str(e)}"
+            return {"error": f"Error presenting loan agreement: {str(e)}"}
     
+    def regenerate_agreement_with_tenure(self, loan_details: str, selected_tenure: int) -> dict:
+        """
+        Regenerate the agreement for a user-selected tenure (in months).
+        
+        Args:
+            loan_details: JSON string or dict with loan approval details
+            selected_tenure: User-selected tenure in months
+            
+        Returns:
+            Dict with agreement text, max tenure, and used tenure
+        """
+        # Accept both dict and str for loan_details
+        import json
+        if isinstance(loan_details, str):
+            try:
+                details = json.loads(loan_details)
+            except Exception:
+                details = self._extract_details_from_text(loan_details)
+        else:
+            details = loan_details
+        return self.present_agreement(details, selected_tenure=selected_tenure)
+
     def capture_digital_acceptance(self, user_response: str) -> str:
         """
         Capture and process the user's digital acceptance.
@@ -497,14 +518,13 @@ The agreement remains valid for 48 hours from presentation.
             Agreement presentation or acceptance confirmation
         """
         try:
-            # Check if this is a user response to an existing agreement
             query_upper = query.strip().upper()
             if any(word in query_upper for word in ['I AGREE', 'I ACCEPT', 'I DECLINE', 'I REJECT', 'AGREE', 'ACCEPT', 'DECLINE', 'REJECT']):
                 return self.capture_digital_acceptance(query)
             else:
-                # This is loan details for agreement presentation
-                return self.present_agreement(query)
-                
+                # For backward compatibility, return only agreement text
+                result = self.present_agreement(query)
+                return result["agreement_text"] if isinstance(result, dict) and "agreement_text" in result else str(result)
         except Exception as e:
             logger.error(f"Error in AgreementAgent.run: {e}")
             return f"Error processing agreement: {str(e)}"

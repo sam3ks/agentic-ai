@@ -63,3 +63,10 @@ python-Levenshtein
 PyPDF2
 flask
 flask-cors
+
+#Frontend Dependencies
+flask-socketio
+streamlit
+streamlit-chat
+tf-keras
+tensorflow

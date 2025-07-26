@@ -14,7 +14,7 @@ class DataQueryAgent(BaseAgent):
  
     def _format_currency(self, amount):
         return format_indian_commas(amount)
- 
+    
     def fetch_credit_score_from_api(self, pan_number):
         """Fetch credit score from external API."""
         try:
@@ -28,6 +28,20 @@ class DataQueryAgent(BaseAgent):
         except Exception as e:
             print(f"[API ERROR] Credit score API call failed: {e}")
         return None
+
+    def fetch_aadhaar_details_from_api(self, aadhaar_number):
+        """Fetch personal details from Aadhaar API."""
+        try:
+            response = requests.post(
+                "http://localhost:5002/get_aadhaar_details",
+                json={"aadhaar_number": aadhaar_number},
+                timeout=5
+            )
+            if response.status_code == 200:
+                return response.json()
+        except Exception as e:
+            print(f"[API ERROR] Aadhaar details API call failed: {e}")
+        return None
  
     def query_user_data(self, query: str) -> str:
         """Queries user data with Aadhaar for details and PAN for credit score only."""
@@ -38,6 +52,8 @@ class DataQueryAgent(BaseAgent):
             aadhaar = None
             pan = None
  
+ 
+
             # Extract identifier
             if is_pan(clean_query):
                 pan = clean_query
@@ -85,7 +101,17 @@ class DataQueryAgent(BaseAgent):
                 api_credit_score = 0
             if api_credit_score is not None:
                 user_data['api_credit_score'] = api_credit_score
-            # --- end API call ---
+
+            # --- API call for Aadhaar personal details ---
+            api_personal_details = None
+            if aadhaar:
+                api_personal_details = self.fetch_aadhaar_details_from_api(aadhaar)
+                if api_personal_details:
+                    print(f"[API] Personal details for Aadhaar {aadhaar}: {api_personal_details['name']}, {api_personal_details['age']} years, {api_personal_details['gender']}, {api_personal_details['marital_status']}")
+                    user_data['api_personal_details'] = api_personal_details
+                else:
+                    print(f"[INFO] No personal details found for Aadhaar {aadhaar}")
+            # --- end API calls ---
  
             if "error" in user_data:
                 print(f"💭 Thought: No matching user found for Aadhaar {aadhaar}. This appears to be a new user.")
@@ -100,11 +126,17 @@ class DataQueryAgent(BaseAgent):
                     monthly_salary = user_data.get('monthly_salary', 0)
                     credit_score = user_data.get('api_credit_score', 0)
                     existing_emi = user_data.get('existing_emi', 0)
+                    personal_details = user_data.get('api_personal_details', {})
+                    
                     credit_rating = "Excellent" if credit_score >= 750 else "Good" if credit_score >= 700 else "Fair" if credit_score >= 650 else "Poor"
                     affordability = "High" if monthly_salary > 75000 else "Medium" if monthly_salary > 40000 else "Limited"
+                    
                     print(f"💭 Thought: User has monthly salary of {self._format_currency(monthly_salary)}, credit score of {credit_score} ({credit_rating}), and existing EMI of {self._format_currency(existing_emi)}.")
+                    if personal_details:
+                        print(f"💭 Thought: Personal details - Name: {personal_details.get('name', 'N/A')}, Age: {personal_details.get('age', 'N/A')}, Gender: {personal_details.get('gender', 'N/A')}, Marital Status: {personal_details.get('marital_status', 'N/A')}.")
                     print(f"💭 Thought: Based on income and existing obligations, affordability level is {affordability}.")
                     print("=" * 50 + "\n")
+                    
                     analysis = {
                         "user_data": user_data,
                         "financial_assessment": {
@@ -113,6 +145,7 @@ class DataQueryAgent(BaseAgent):
                             "monthly_disposable_income": monthly_salary - existing_emi,
                             "existing_debt_burden": f"{self._format_currency(existing_emi)} per month"
                         },
+                        "personal_details": personal_details if personal_details else {},
                         "status": "existing_user_found",
                         "action_needed": "ask_about_salary_update",
                         "message": "Existing user found. Ask if they want to update their salary information.",

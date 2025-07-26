@@ -65,6 +65,7 @@ CRITICAL: Your Thought sections MUST be detailed and comprehensive. ALWAYS inclu
 For GeoPolicyCheck and RiskAssessment especially, provide thorough analysis in the Thought section.
 **NEVER STOP THE WORKFLOW EARLY** - you must complete ALL steps including RiskAssessment before making final decisions.
 
+
 MANDATORY REASONING REQUIREMENTS:
 1. ALWAYS start with a detailed "Thought:" before EACH action, explaining your decision-making process
 2. NEVER skip the "Thought:" section - it is the most important part of your response
@@ -95,7 +96,7 @@ TASK:
 
 {agent_scratchpad}
 """
-    
+
     # Create a prompt template with all required variables
     prompt = PromptTemplate(
         input_variables=["input", "agent_scratchpad", "tools", "tool_names"],

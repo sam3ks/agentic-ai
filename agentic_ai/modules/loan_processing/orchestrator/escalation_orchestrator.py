@@ -135,10 +135,11 @@ class EscalationOrchestrator(LoanAgentOrchestrator):
     
     def _create_context_key(self, question: str) -> str:
         """Create a unique context key for the question."""
-        # Extract key words to create context
         question_lower = question.lower()
-        
-        if any(word in question_lower for word in ["purpose", "use", "loan for"]):
+        # Robust salary document key: match any prompt about salary, pdf, file, document, path, upload, slip, etc.
+        if any(word in question_lower for word in ["salary", "income", "pdf", "document", "file", "path", "upload", "slip"]):
+            return "salary_document"
+        elif any(word in question_lower for word in ["purpose", "use", "loan for"]):
             return "loan_purpose"
         elif any(word in question_lower for word in ["amount", "how much", "rupees"]):
             return "loan_amount"
@@ -146,8 +147,6 @@ class EscalationOrchestrator(LoanAgentOrchestrator):
             return "user_city"
         elif any(word in question_lower for word in ["pan", "aadhaar", "identifier"]):
             return "user_identity"
-        elif any(word in question_lower for word in ["salary", "income", "pdf", "document"]):
-            return "salary_document"
         elif any(word in question_lower for word in ["update", "salary information"]):
             return "salary_update"
         else:
