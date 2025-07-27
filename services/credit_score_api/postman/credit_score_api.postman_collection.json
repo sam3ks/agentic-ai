@@ -1,0 +1,28 @@
+{
+  "info": {
+    "name": "Credit Score API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Credit Score",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5001/credit-score?customer_id=123",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5001",
+          "path": ["credit-score"],
+          "query": [
+            {
+              "key": "customer_id",
+              "value": "123"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

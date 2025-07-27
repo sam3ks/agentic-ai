@@ -1,0 +1,28 @@
+{
+  "info": {
+    "name": "Aadhaar API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Verify Aadhaar",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5002/aadhaar/verify?aadhaar_number=123456789012",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5002",
+          "path": ["aadhaar", "verify"],
+          "query": [
+            {
+              "key": "aadhaar_number",
+              "value": "123456789012"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
