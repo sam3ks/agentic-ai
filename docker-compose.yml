@@ -1,0 +1,51 @@
+version: "3.9"
+
+services:
+  streamlit_ui:
+    build:
+      context: .
+      dockerfile: docker/streamlit_ui/Dockerfile
+    command: ["streamlit", "run", "streamlit_app/run_loan_streamlit.py"]
+    ports:
+      - "8501:8501"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+    volumes:
+      - .:/app
+    restart: unless-stopped
+
+  aadhaar_api:
+    build:
+      context: .
+      dockerfile: docker/aadhaar_api/Dockerfile
+    command: ["python", "scripts/aadhaar_details_api.py"]
+    ports:
+      - "5002:5002"
+    volumes:
+      - .:/app
+    restart: unless-stopped
+
+  credit_score_api:
+    build:
+      context: .
+      dockerfile: docker/credit_score_api/Dockerfile
+    command: ["python", "scripts/credit_score_api.py"]
+    ports:
+      - "5001:5001"
+    volumes:
+      - .:/app
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/dashboard/Dockerfile
+    command: ["python", "human_operator_dashboard.py"]
+    volumes:
+      - .:/app
+      - ./escalation_data:/app/escalation_data
+    stdin_open: true
+    tty: true
+    restart: unless-stopped

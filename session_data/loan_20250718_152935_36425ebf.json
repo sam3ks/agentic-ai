@@ -1,0 +1,77 @@
+{
+  "session_id": "loan_20250718_152935_36425ebf",
+  "created_at": "2025-07-18T15:29:35.559520",
+  "status": "ended_by_user",
+  "user_request": "needed a bike loan",
+  "workflow_step": 2,
+  "collected_data": {
+    "initial_loan_details": {
+      "purpose": "vehicle purchase",
+      "amount": 0.0,
+      "city": "unknown"
+    }
+  },
+  "conversation_history": [
+    {
+      "timestamp": "2025-07-18T15:29:39.155752",
+      "speaker": "User",
+      "message": "needed a bike loan"
+    },
+    {
+      "timestamp": "2025-07-18T15:29:46.056370",
+      "speaker": "System",
+      "message": "Please provide the loan amount you need for the bike loan."
+    },
+    {
+      "timestamp": "2025-07-18T15:29:46.056370",
+      "speaker": "User",
+      "message": "{\"amount\": \"2345676543245\"}"
+    },
+    {
+      "timestamp": "2025-07-18T15:29:47.774373",
+      "speaker": "System",
+      "message": "Loan amount too large. Maximum is \u20b91,00,00,000. Please provide the loan amount you need for the bike loan."
+    },
+    {
+      "timestamp": "2025-07-18T15:29:47.776322",
+      "speaker": "User",
+      "message": "{\"amount\": \"54323456789876543\"}"
+    },
+    {
+      "timestamp": "2025-07-18T15:29:49.686745",
+      "speaker": "System",
+      "message": "Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. Please provide the loan amount you need for the bike loan."
+    },
+    {
+      "timestamp": "2025-07-18T15:29:49.689002",
+      "speaker": "User",
+      "message": "{\"amount\": \"34567876543234567\"}"
+    },
+    {
+      "timestamp": "2025-07-18T15:29:54.787583",
+      "speaker": "System",
+      "message": "User declined escalation - loan application ended"
+    }
+  ],
+  "agent_state": {},
+  "orchestrator_state": {
+    "escalation_attempts": {
+      "6549770184553778803": 3
+    },
+    "conversation_history": [
+      "System: Please provide the loan amount you need for the bike loan.",
+      "User: {\"amount\": \"2345676543245\"}",
+      "System: Loan amount too large. Maximum is \u20b91,00,00,000. Please provide the loan amount you need for the bike loan.",
+      "User: {\"amount\": \"54323456789876543\"}",
+      "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. Please provide the loan amount you need for the bike loan.",
+      "User: {\"amount\": \"34567876543234567\"}"
+    ],
+    "captured_agreement": null,
+    "captured_loan_details": null,
+    "captured_tool_outputs": {},
+    "stored_existing_user_data": null,
+    "current_question_type": null
+  },
+  "last_updated": "2025-07-18T15:29:54.787583",
+  "current_step_description": "Starting agent workflow"
+}

@@ -1,0 +1,83 @@
+{
+  "session_id": "loan_20250722_114808_5c500710",
+  "created_at": "2025-07-22T11:48:08.863843",
+  "status": "interrupted",
+  "user_request": "needed a bike loan worth 5 lakhs in bangalore",
+  "workflow_step": 2,
+  "collected_data": {
+    "initial_loan_details": {
+      "purpose": "vehicle purchase",
+      "amount": 500000.0,
+      "city": "Bangalore"
+    },
+    "pan": "JQVXI5599I",
+    "aadhaar": "123456789012",
+    "document_path": "blahblah.pdf",
+    "agreement_response": "An error occurred: "
+  },
+  "conversation_history": [
+    {
+      "timestamp": "2025-07-22T11:48:12.442470",
+      "speaker": "User",
+      "message": "needed a bike loan worth 5 lakhs in bangalore"
+    },
+    {
+      "timestamp": "2025-07-22T11:48:47.664040",
+      "speaker": "System",
+      "message": "Please provide your PAN or Aadhaar number."
+    },
+    {
+      "timestamp": "2025-07-22T11:48:47.664040",
+      "speaker": "User",
+      "message": "{\"pan\": \"JQVXI5599I\", \"aadhaar\": \"123456789012\"}"
+    },
+    {
+      "timestamp": "2025-07-22T11:49:08.085173",
+      "speaker": "System",
+      "message": "Please upload your salary information (PDF)."
+    },
+    {
+      "timestamp": "2025-07-22T11:49:08.088134",
+      "speaker": "User",
+      "message": "{\"document_path\": \"blahblah.pdf\"}"
+    },
+    {
+      "timestamp": "2025-07-22T12:02:18.473615",
+      "speaker": "System",
+      "message": "Do you accept the loan agreement terms? (Please respond with 'I ACCEPT' or 'I DECLINE')"
+    },
+    {
+      "timestamp": "2025-07-22T12:02:18.474645",
+      "speaker": "User",
+      "message": "{\"agreement_response\": \"An error occurred: \"}"
+    }
+  ],
+  "agent_state": {},
+  "orchestrator_state": {
+    "escalation_attempts": {
+      "2519242257463662418": 0,
+      "-4137669073763421178": 0,
+      "-1055566265748574874": 0
+    },
+    "conversation_history": [
+      "System: Please provide your PAN or Aadhaar number.",
+      "User: {\"pan\": \"JQVXI5599I\", \"aadhaar\": \"123456789012\"}",
+      "System: Please upload your salary information (PDF).",
+      "User: {\"document_path\": \"blahblah.pdf\"}",
+      "System: Do you accept the loan agreement terms? (Please respond with 'I ACCEPT' or 'I DECLINE')",
+      "User: {\"agreement_response\": \"An error occurred: \"}"
+    ],
+    "captured_agreement": "\nLOAN AGREEMENT & TERMS\n====================================================================\n\nBORROWER DETAILS:\n\u2022 Name: Valued Customer\n\u2022 Loan Purpose: Personal Loan\n\u2022 Agreement Date: 22-07-2025\n\nLOAN DETAILS:\n\u2022 Principal Amount: \u20b95,00,000\n\u2022 Interest Rate: 12.0% per annum\n\u2022 Loan Tenure: 60 months (5 years)\n\u2022 Monthly EMI: \u20b911,122\n\u2022 Processing Fee: \u20b910,000\n\u2022 Total Amount Payable: \u20b96,67,333\n\nREPAYMENT SCHEDULE:\n\u2022 First EMI Date: 21th August 2025\n\u2022 Final EMI Date: 26th June 2030\n\u2022 EMI Deduction: Auto-debit from registered bank account\n\nTERMS & CONDITIONS:\n1. Loan amount will be disbursed to the registered bank account only\n2. EMI auto-debit mandate is mandatory\n3. Any change in employment must be notified immediately\n4. Insurance coverage is recommended but not mandatory\n5. Loan account will be reported to credit bureaus\n\nCHARGES & FEES:\n\u2022 Processing Fee: 2.0% of loan amount\n\u2022 Late Payment Charges: 3% per month on overdue amount\n\u2022 Prepayment Charges: 2% of outstanding amount if prepaid within 2 years\n\nDOCUMENTATION REQUIRED:\n\u2022 PAN Card\n\u2022 Aadhaar Card\n\u2022 Salary Slips (last 3 months)\n\u2022 Bank Statements (last 6 months)\n\u2022 Address Proof\n\nIMPORTANT NOTES:\n\u2022 Disbursement Timeline: 7-10 working days after agreement signing\n\u2022 Cooling-off Period: 14 days from agreement date\n\n====================================================================\n",
+    "captured_loan_details": {
+      "loan_amount": 500000.0,
+      "decision": "reject",
+      "reason": "The applicant has a monthly salary of 0, no existing EMI, and a credit score of 0, indicating a high risk for loan approval."
+    },
+    "captured_tool_outputs": {},
+    "stored_existing_user_data": null,
+    "current_question_type": null
+  },
+  "last_updated": "2025-07-22T12:02:18.477338",
+  "current_step_description": "Starting agent workflow",
+  "interrupted_at": "2025-07-22T12:02:18.485765"
+}

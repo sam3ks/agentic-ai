@@ -1,0 +1,86 @@
+{
+  "session_id": "loan_20250718_161217_8ff1d8bf",
+  "created_at": "2025-07-18T16:12:17.176420",
+  "status": "interrupted",
+  "user_request": "needed a bike loan for 4 lakhs",
+  "workflow_step": 2,
+  "collected_data": {
+    "initial_loan_details": {
+      "purpose": "vehicle purchase",
+      "amount": 400000.0,
+      "city": "unknown"
+    },
+    "pan": "AOGGX0057V",
+    "salary_update_confirmation": "no"
+  },
+  "conversation_history": [
+    {
+      "timestamp": "2025-07-18T16:12:20.586759",
+      "speaker": "User",
+      "message": "needed a bike loan for 4 lakhs"
+    },
+    {
+      "timestamp": "2025-07-18T16:12:44.139362",
+      "speaker": "System",
+      "message": "Please provide your PAN or Aadhaar number."
+    },
+    {
+      "timestamp": "2025-07-18T16:12:44.148571",
+      "speaker": "User",
+      "message": "{\"pan\": \"AOGGX0057V\"}"
+    },
+    {
+      "timestamp": "2025-07-18T16:12:57.781298",
+      "speaker": "System",
+      "message": "Do you want to update your salary information?"
+    },
+    {
+      "timestamp": "2025-07-18T16:12:57.789992",
+      "speaker": "User",
+      "message": "{\"salary_update_confirmation\": \"no\"}"
+    }
+  ],
+  "agent_state": {},
+  "orchestrator_state": {
+    "escalation_attempts": {
+      "-8044529005589019269": 0,
+      "2941241652001101834": 0,
+      "1161945531923261926": 1
+    },
+    "conversation_history": [
+      "System: Please provide your PAN or Aadhaar number.",
+      "User: {\"pan\": \"AOGGX0057V\"}",
+      "System: Do you want to update your salary information?",
+      "User: {\"salary_update_confirmation\": \"no\"}"
+    ],
+    "captured_agreement": null,
+    "captured_loan_details": null,
+    "captured_tool_outputs": {},
+    "stored_existing_user_data": {
+      "user_id": "user_9",
+      "monthly_salary": 67889,
+      "avg_monthly_balance": 105341.1,
+      "existing_emi": 15673,
+      "emi_to_income_ratio": 23.09,
+      "delayed_payments": 1,
+      "avg_daily_transactions": 14.05,
+      "bounced_transactions": 0,
+      "nach_failures": 0,
+      "age": 57,
+      "pan_number": "AOGGX0057V",
+      "aadhaar_number": "347676851687",
+      "status": "existing_user_data_retrieved",
+      "api_credit_score": 807,
+      "api_personal_details": {
+        "age": 30,
+        "gender": "Male",
+        "marital_status": "Single",
+        "name": "Rahul Sharma"
+      }
+    },
+    "current_question_type": null
+  },
+  "last_updated": "2025-07-18T16:12:57.795722",
+  "current_step_description": "Starting agent workflow",
+  "interrupted_at": "2025-07-18T16:15:58.691811"
+}

@@ -1,0 +1,149 @@
+{
+  "session_id": "loan_20250718_155803_e4f559c1",
+  "created_at": "2025-07-18T15:58:03.488802",
+  "status": "interrupted",
+  "user_request": "needed a bike loan for 5 lakhs",
+  "workflow_step": 2,
+  "collected_data": {
+    "initial_loan_details": {
+      "purpose": "vehicle purchase",
+      "amount": 500000.0,
+      "city": "unknown"
+    },
+    "pan": "AOGGX0057V",
+    "salary_update_confirmation": "yes",
+    "document_path": "C:\\Users\\R.Darshan\\Downloads\\working_langgraph\\sample_salarypdf_template.pdf",
+    "city": "Kolkata"
+  },
+  "conversation_history": [
+    {
+      "timestamp": "2025-07-18T15:58:07.353408",
+      "speaker": "User",
+      "message": "needed a bike loan for 5 lakhs"
+    },
+    {
+      "timestamp": "2025-07-18T15:58:26.514452",
+      "speaker": "System",
+      "message": "Please provide your PAN or Aadhaar number."
+    },
+    {
+      "timestamp": "2025-07-18T15:58:26.515524",
+      "speaker": "User",
+      "message": "{\"pan\": \"AOGGX0057V\"}"
+    },
+    {
+      "timestamp": "2025-07-18T15:59:38.014476",
+      "speaker": "System",
+      "message": "Do you want to update your salary information?"
+    },
+    {
+      "timestamp": "2025-07-18T15:59:38.016930",
+      "speaker": "User",
+      "message": "{\"salary_update_confirmation\": \"yes\"}"
+    },
+    {
+      "timestamp": "2025-07-18T15:59:52.652020",
+      "speaker": "System",
+      "message": "Please upload your salary PDF file path."
+    },
+    {
+      "timestamp": "2025-07-18T15:59:52.653365",
+      "speaker": "User",
+      "message": "{\"document_path\": \"C:\\\\Users\\\\R.Darshan\\\\Downloads\\\\working_langgraph\\\\sample_salarypdf_template.pdf\"}"
+    },
+    {
+      "timestamp": "2025-07-18T16:00:46.188425",
+      "speaker": "System",
+      "message": "Please provide your city."
+    },
+    {
+      "timestamp": "2025-07-18T16:00:46.191145",
+      "speaker": "User",
+      "message": "{\"city\": \"Kolkata\"}"
+    },
+    {
+      "timestamp": "2025-07-18T16:07:03.922428",
+      "speaker": "System",
+      "message": "Please upload your salary PDF file path."
+    },
+    {
+      "timestamp": "2025-07-18T16:07:03.927656",
+      "speaker": "User",
+      "message": "{\"document_path\": \"An error occurred: \"}"
+    },
+    {
+      "timestamp": "2025-07-18T16:07:05.857682",
+      "speaker": "System",
+      "message": "Please provide a valid PDF or text file path. Please upload your salary PDF file path."
+    },
+    {
+      "timestamp": "2025-07-18T16:07:05.865709",
+      "speaker": "User",
+      "message": "{\"document_path\": \"An error occurred: \"}"
+    },
+    {
+      "timestamp": "2025-07-18T16:07:06.445155",
+      "speaker": "System",
+      "message": "Please provide a valid PDF or text file path. Please provide a valid PDF or text file path. Please upload your salary PDF file path."
+    },
+    {
+      "timestamp": "2025-07-18T16:07:06.446819",
+      "speaker": "User",
+      "message": "{\"document_path\": \"An error occurred: \"}"
+    }
+  ],
+  "agent_state": {},
+  "orchestrator_state": {
+    "escalation_attempts": {
+      "3225410377175980986": 0,
+      "4689011635328731492": 0,
+      "salary_pdf_path": 3,
+      "1392484546116732934": 0
+    },
+    "conversation_history": [
+      "System: Please provide your PAN or Aadhaar number.",
+      "User: {\"pan\": \"AOGGX0057V\"}",
+      "System: Do you want to update your salary information?",
+      "User: {\"salary_update_confirmation\": \"yes\"}",
+      "System: Please upload your salary PDF file path.",
+      "User: {\"document_path\": \"C:\\\\Users\\\\R.Darshan\\\\Downloads\\\\working_langgraph\\\\sample_salarypdf_template.pdf\"}",
+      "System: Please provide your city.",
+      "User: {\"city\": \"Kolkata\"}",
+      "System: Please upload your salary PDF file path.",
+      "User: {\"document_path\": \"An error occurred: \"}",
+      "System: Please provide a valid PDF or text file path. Please upload your salary PDF file path.",
+      "User: {\"document_path\": \"An error occurred: \"}",
+      "System: Please provide a valid PDF or text file path. Please provide a valid PDF or text file path. Please upload your salary PDF file path.",
+      "User: {\"document_path\": \"An error occurred: \"}"
+    ],
+    "captured_agreement": null,
+    "captured_loan_details": null,
+    "captured_tool_outputs": {},
+    "stored_existing_user_data": {
+      "user_id": "user_9",
+      "monthly_salary": 67889,
+      "avg_monthly_balance": 105341.1,
+      "existing_emi": 15673,
+      "emi_to_income_ratio": 23.09,
+      "delayed_payments": 1,
+      "avg_daily_transactions": 14.05,
+      "bounced_transactions": 0,
+      "nach_failures": 0,
+      "age": 57,
+      "pan_number": "AOGGX0057V",
+      "aadhaar_number": "347676851687",
+      "status": "existing_user_data_retrieved",
+      "api_credit_score": 807,
+      "api_personal_details": {
+        "age": 30,
+        "gender": "Male",
+        "marital_status": "Single",
+        "name": "Rahul Sharma"
+      }
+    },
+    "current_question_type": null
+  },
+  "last_updated": "2025-07-18T16:07:06.446819",
+  "current_step_description": "Starting agent workflow",
+  "interrupted_at": "2025-07-18T16:07:09.053167"
+}

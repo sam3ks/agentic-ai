@@ -1,0 +1,114 @@
+{
+  "session_id": "loan_20250721_114908_ac435109",
+  "created_at": "2025-07-21T11:49:08.998605",
+  "status": "completed",
+  "user_request": "needed a bike loan for 4 lakhs in bangalore",
+  "workflow_step": 2,
+  "collected_data": {
+    "initial_loan_details": {
+      "purpose": "vehicle purchase",
+      "amount": 400000.0,
+      "city": "Bangalore"
+    }
+  },
+  "conversation_history": [
+    {
+      "timestamp": "2025-07-21T11:49:14.750153",
+      "speaker": "User",
+      "message": "needed a bike loan for 4 lakhs in bangalore"
+    },
+    {
+      "timestamp": "2025-07-21T11:49:24.327570",
+      "speaker": "System",
+      "message": "Please provide your PAN or Aadhaar number."
+    },
+    {
+      "timestamp": "2025-07-21T11:49:24.329899",
+      "speaker": "User",
+      "message": "{\"pan\": \"USER_EXIT\"}"
+    },
+    {
+      "timestamp": "2025-07-21T11:49:25.626963",
+      "speaker": "System",
+      "message": "Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number."
+    },
+    {
+      "timestamp": "2025-07-21T11:49:25.628474",
+      "speaker": "User",
+      "message": "{\"pan\": \"USER_EXIT\"}"
+    },
+    {
+      "timestamp": "2025-07-21T11:49:26.422741",
+      "speaker": "System",
+      "message": "Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number."
+    },
+    {
+      "timestamp": "2025-07-21T11:49:26.422741",
+      "speaker": "User",
+      "message": "{\"pan\": \"USER_EXIT\"}"
+    },
+    {
+      "timestamp": "2025-07-21T11:59:14.667753",
+      "speaker": "System",
+      "message": "Please provide your PAN or Aadhaar number."
+    },
+    {
+      "timestamp": "2025-07-21T11:59:14.670772",
+      "speaker": "User",
+      "message": "{\"pan\": \"USER_EXIT\"}"
+    },
+    {
+      "timestamp": "2025-07-21T11:59:15.706859",
+      "speaker": "System",
+      "message": "Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number."
+    },
+    {
+      "timestamp": "2025-07-21T11:59:15.710443",
+      "speaker": "User",
+      "message": "{\"pan\": \"USER_EXIT\"}"
+    },
+    {
+      "timestamp": "2025-07-21T11:59:16.755912",
+      "speaker": "System",
+      "message": "Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number."
+    },
+    {
+      "timestamp": "2025-07-21T11:59:16.758334",
+      "speaker": "User",
+      "message": "{\"pan\": \"USER_EXIT\"}"
+    }
+  ],
+  "agent_state": {},
+  "orchestrator_state": {
+    "escalation_attempts": {
+      "-4878431658257392958": 3,
+      "1510650784809224449": 3
+    },
+    "conversation_history": [
+      "System: Please provide your PAN or Aadhaar number.",
+      "User: {\"pan\": \"USER_EXIT\"}",
+      "System: Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
+      "User: {\"pan\": \"USER_EXIT\"}",
+      "System: Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
+      "User: {\"pan\": \"USER_EXIT\"}",
+      "System: Please provide your PAN or Aadhaar number.",
+      "User: {\"pan\": \"USER_EXIT\"}",
+      "System: Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
+      "User: {\"pan\": \"USER_EXIT\"}",
+      "System: Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
+      "User: {\"pan\": \"USER_EXIT\"}"
+    ],
+    "captured_agreement": null,
+    "captured_loan_details": null,
+    "captured_tool_outputs": {},
+    "stored_existing_user_data": null,
+    "current_question_type": null
+  },
+  "last_updated": "2025-07-21T11:59:18.834402",
+  "current_step_description": "Starting agent workflow",
+  "interrupted_at": "2025-07-21T11:49:39.192307",
+  "session_status": "ended_by_user",
+  "termination_reason": "user_declined_escalation",
+  "completed_at": "2025-07-21T11:59:18.836309",
+  "final_result": "Application terminated: User declined escalation to human agent."
+}

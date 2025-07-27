@@ -1,0 +1,37 @@
+# Ignore virtual environments
+.venv/
+env/
+
+# Ignore system files and editor folders
+.vscode/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.bat
+
+# Ignore secrets and environment files
+.env
+
+# Ignore Git-related files
+.git/
+.gitignore
+.gitattributes
+
+# Ignore build/test/output artifacts
+*.db
+*.sqlite
+*.sqlite3
+*.pdf
+*.csv
+*.xls*
+*.xlsx
+
+# Ignore runtime session and uploaded files
+uploaded_files/
+escalation_data/
+streamlit_app/escalation_data/
+session_data/
+test_flows/
+ssl_fix.bat

@@ -1,0 +1,40 @@
+{
+  "session_id": "loan_20250718_113424_a3187520",
+  "created_at": "2025-07-18T11:34:24.484841",
+  "status": "interrupted",
+  "user_request": "needed a car loan for 6 lakhs",
+  "workflow_step": 2,
+  "collected_data": {
+    "initial_loan_details": {
+      "purpose": "vehicle purchase",
+      "amount": 600000.0,
+      "city": "unknown"
+    }
+  },
+  "conversation_history": [
+    {
+      "timestamp": "2025-07-18T11:34:24.487621",
+      "speaker": "User",
+      "message": "needed a car loan for 6 lakhs"
+    }
+  ],
+  "agent_state": {},
+  "orchestrator_state": {
+    "escalation_attempts": {
+      "999204119094990828": 0,
+      "6476308056636793548": 1
+    },
+    "conversation_history": [
+      "System: Please provide your PAN or Aadhaar number.",
+      "User: {\"pan\": \"AOGGX0057V\"}"
+    ],
+    "captured_agreement": null,
+    "captured_loan_details": null,
+    "captured_tool_outputs": {},
+    "stored_existing_user_data": null,
+    "current_question_type": null
+  },
+  "last_updated": "2025-07-18T11:34:28.177183",
+  "current_step_description": "Starting agent workflow",
+  "interrupted_at": "2025-07-18T11:35:10.912747"
+}

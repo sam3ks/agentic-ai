@@ -1,0 +1,51 @@
+{
+  "session_id": "loan_20250721_165447_97c6bffa",
+  "created_at": "2025-07-21T16:54:47.452632",
+  "status": "interrupted",
+  "user_request": "need loan",
+  "workflow_step": 2,
+  "collected_data": {
+    "initial_loan_details": {
+      "purpose": "not_detected",
+      "amount": 0.0,
+      "city": "unknown"
+    },
+    "purpose": "vehicle purchase"
+  },
+  "conversation_history": [
+    {
+      "timestamp": "2025-07-21T16:54:47.466692",
+      "speaker": "User",
+      "message": "need loan"
+    },
+    {
+      "timestamp": "2025-07-21T16:55:08.707136",
+      "speaker": "System",
+      "message": "What is the purpose of the loan?"
+    },
+    {
+      "timestamp": "2025-07-21T16:55:08.723411",
+      "speaker": "User",
+      "message": "{\"purpose\": \"vehicle purchase\"}"
+    }
+  ],
+  "agent_state": {},
+  "orchestrator_state": {
+    "escalation_attempts": {
+      "-3244208254074649104": 0,
+      "6620995993788312560": 1
+    },
+    "conversation_history": [
+      "System: What is the purpose of the loan?",
+      "User: {\"purpose\": \"vehicle purchase\"}"
+    ],
+    "captured_agreement": null,
+    "captured_loan_details": null,
+    "captured_tool_outputs": {},
+    "stored_existing_user_data": null,
+    "current_question_type": null
+  },
+  "last_updated": "2025-07-21T16:55:08.723411",
+  "current_step_description": "Starting agent workflow",
+  "interrupted_at": "2025-07-21T16:55:37.790969"
+}

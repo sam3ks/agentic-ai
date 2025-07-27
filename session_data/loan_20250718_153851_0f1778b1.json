@@ -1,0 +1,120 @@
+{
+  "session_id": "loan_20250718_153851_0f1778b1",
+  "created_at": "2025-07-18T15:38:51.057791",
+  "status": "interrupted",
+  "user_request": "needed a bike loan",
+  "workflow_step": 2,
+  "collected_data": {
+    "initial_loan_details": {
+      "purpose": "vehicle purchase",
+      "amount": 0.0,
+      "city": "unknown"
+    },
+    "amount": "4 lakhs",
+    "pan": "AOGGX0057V",
+    "city": "Bangalore",
+    "agreement_response": "An error occurred: "
+  },
+  "conversation_history": [
+    {
+      "timestamp": "2025-07-18T15:38:54.477781",
+      "speaker": "User",
+      "message": "needed a bike loan"
+    },
+    {
+      "timestamp": "2025-07-18T15:39:04.938454",
+      "speaker": "System",
+      "message": "Please provide the loan amount you need."
+    },
+    {
+      "timestamp": "2025-07-18T15:39:04.939986",
+      "speaker": "User",
+      "message": "{\"amount\": \"4 lakhs\"}"
+    },
+    {
+      "timestamp": "2025-07-18T15:39:31.223211",
+      "speaker": "System",
+      "message": "Please provide your PAN or Aadhaar number."
+    },
+    {
+      "timestamp": "2025-07-18T15:39:31.223211",
+      "speaker": "User",
+      "message": "{\"pan\": \"AOGGX0057V\"}"
+    },
+    {
+      "timestamp": "2025-07-18T15:39:43.912915",
+      "speaker": "System",
+      "message": "Please provide your city."
+    },
+    {
+      "timestamp": "2025-07-18T15:39:43.914146",
+      "speaker": "User",
+      "message": "{\"city\": \"Bangalore\"}"
+    },
+    {
+      "timestamp": "2025-07-18T15:47:45.677792",
+      "speaker": "System",
+      "message": "Do you accept the loan agreement? Please respond with 'I ACCEPT' or 'I DECLINE'."
+    },
+    {
+      "timestamp": "2025-07-18T15:47:45.677792",
+      "speaker": "User",
+      "message": "{\"agreement_response\": \"An error occurred: \"}"
+    }
+  ],
+  "agent_state": {},
+  "orchestrator_state": {
+    "escalation_attempts": {
+      "-3017481463561857022": 0,
+      "7459592662068833755": 0,
+      "-7007577076826403965": 0,
+      "4386324972873076746": 0
+    },
+    "conversation_history": [
+      "System: Please provide the loan amount you need.",
+      "User: {\"amount\": \"4 lakhs\"}",
+      "System: Please provide your PAN or Aadhaar number.",
+      "User: {\"pan\": \"AOGGX0057V\"}",
+      "System: Please provide your city.",
+      "User: {\"city\": \"Bangalore\"}",
+      "System: Do you accept the loan agreement? Please respond with 'I ACCEPT' or 'I DECLINE'.",
+      "User: {\"agreement_response\": \"An error occurred: \"}"
+    ],
+    "captured_agreement": "\nLOAN AGREEMENT & TERMS\n====================================================================\n\nBORROWER DETAILS:\n\u2022 Name: Valued Customer\n\u2022 Loan Purpose: Personal Loan\n\u2022 Agreement Date: 18-07-2025\n\nLOAN DETAILS:\n\u2022 Principal Amount: \u20b94,00,000\n\u2022 Interest Rate: 7.5% per annum\n\u2022 Loan Tenure: 60 months (5 years)\n\u2022 Monthly EMI: \u20b98,015\n\u2022 Processing Fee: \u20b98,000\n\u2022 Total Amount Payable: \u20b94,80,910\n\nREPAYMENT SCHEDULE:\n\u2022 First EMI Date: 17th August 2025\n\u2022 Final EMI Date: 22th June 2030\n\u2022 EMI Deduction: Auto-debit from registered bank account\n\nTERMS & CONDITIONS:\n1. Loan amount will be disbursed to the registered bank account only\n2. EMI auto-debit mandate is mandatory\n3. Any change in employment must be notified immediately\n4. Insurance coverage is recommended but not mandatory\n5. Loan account will be reported to credit bureaus\n\nCHARGES & FEES:\n\u2022 Processing Fee: 2.0% of loan amount\n\u2022 Late Payment Charges: 3% per month on overdue amount\n\u2022 Prepayment Charges: 2% of outstanding amount if prepaid within 2 years\n\nDOCUMENTATION REQUIRED:\n\u2022 PAN Card\n\u2022 Aadhaar Card\n\u2022 Salary Slips (last 3 months)\n\u2022 Bank Statements (last 6 months)\n\u2022 Address Proof\n\nIMPORTANT NOTES:\n\u2022 Disbursement Timeline: 7-10 working days after agreement signing\n\u2022 Cooling-off Period: 14 days from agreement date\n\n====================================================================\n",
+    "captured_loan_details": {
+      "loan_amount": 400000,
+      "interest_rate": 7.5,
+      "user_details": {
+        "monthly_salary": 67889,
+        "credit_score": 807
+      }
+    },
+    "captured_tool_outputs": {},
+    "stored_existing_user_data": {
+      "user_id": "user_9",
+      "monthly_salary": 67889,
+      "avg_monthly_balance": 105341.1,
+      "existing_emi": 15673,
+      "emi_to_income_ratio": 23.09,
+      "delayed_payments": 1,
+      "avg_daily_transactions": 14.05,
+      "bounced_transactions": 0,
+      "nach_failures": 0,
+      "age": 57,
+      "pan_number": "AOGGX0057V",
+      "aadhaar_number": "347676851687",
+      "status": "existing_user_data_retrieved",
+      "api_credit_score": 807,
+      "api_personal_details": {
+        "age": 30,
+        "gender": "Male",
+        "marital_status": "Single",
+        "name": "Rahul Sharma"
+      }
+    },
+    "current_question_type": null
+  },
+  "last_updated": "2025-07-18T15:47:45.687791",
+  "current_step_description": "Starting agent workflow",
+  "interrupted_at": "2025-07-18T15:47:45.700424"
+}

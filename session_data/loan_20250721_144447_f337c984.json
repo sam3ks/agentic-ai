@@ -1,0 +1,51 @@
+{
+  "session_id": "loan_20250721_144447_f337c984",
+  "created_at": "2025-07-21T14:44:47.338922",
+  "status": "interrupted",
+  "user_request": "needed a bike loan of 4 lakhs in bangalore",
+  "workflow_step": 2,
+  "collected_data": {
+    "initial_loan_details": {
+      "purpose": "vehicle purchase",
+      "amount": 400000.0,
+      "city": "Bangalore"
+    },
+    "pan": "DVNFN2660N",
+    "aadhaar": "216563686675"
+  },
+  "conversation_history": [
+    {
+      "timestamp": "2025-07-21T14:44:50.953319",
+      "speaker": "User",
+      "message": "needed a bike loan of 4 lakhs in bangalore"
+    },
+    {
+      "timestamp": "2025-07-21T14:46:54.162045",
+      "speaker": "System",
+      "message": "Please provide your PAN or Aadhaar number."
+    },
+    {
+      "timestamp": "2025-07-21T14:46:54.164522",
+      "speaker": "User",
+      "message": "{\"pan\": \"DVNFN2660N\", \"aadhaar\": \"216563686675\"}"
+    }
+  ],
+  "agent_state": {},
+  "orchestrator_state": {
+    "escalation_attempts": {
+      "8704687010901452365": 0
+    },
+    "conversation_history": [
+      "System: Please provide your PAN or Aadhaar number.",
+      "User: {\"pan\": \"DVNFN2660N\", \"aadhaar\": \"216563686675\"}"
+    ],
+    "captured_agreement": null,
+    "captured_loan_details": null,
+    "captured_tool_outputs": {},
+    "stored_existing_user_data": null,
+    "current_question_type": null
+  },
+  "last_updated": "2025-07-21T14:46:54.174169",
+  "current_step_description": "Starting agent workflow",
+  "interrupted_at": "2025-07-21T14:49:20.272330"
+}

@@ -1,0 +1,36 @@
+{
+  "session_id": "loan_20250718_182558_3a026683",
+  "created_at": "2025-07-18T18:25:58.429671",
+  "status": "interrupted",
+  "user_request": "needed a bike loan for 4 lakhs in bangalore",
+  "workflow_step": 2,
+  "collected_data": {
+    "initial_loan_details": {
+      "purpose": "vehicle purchase",
+      "amount": 400000.0,
+      "city": "Bangalore"
+    }
+  },
+  "conversation_history": [
+    {
+      "timestamp": "2025-07-18T18:26:02.001449",
+      "speaker": "User",
+      "message": "needed a bike loan for 4 lakhs in bangalore"
+    }
+  ],
+  "agent_state": {},
+  "orchestrator_state": {
+    "escalation_attempts": {
+      "-7471298478612262532": 1
+    },
+    "conversation_history": [],
+    "captured_agreement": null,
+    "captured_loan_details": null,
+    "captured_tool_outputs": {},
+    "stored_existing_user_data": null,
+    "current_question_type": null
+  },
+  "last_updated": "2025-07-18T18:26:02.005975",
+  "current_step_description": "Starting agent workflow",
+  "interrupted_at": "2025-07-18T18:26:08.710726"
+}

@@ -1,0 +1,65 @@
+{
+  "session_id": "loan_20250721_145049_62f831da",
+  "created_at": "2025-07-21T14:50:49.294663",
+  "status": "interrupted",
+  "user_request": "needed a bike loan of 4 lakhs in bangalore",
+  "workflow_step": 2,
+  "collected_data": {
+    "initial_loan_details": {
+      "purpose": "vehicle purchase",
+      "amount": 400000.0,
+      "city": "Bangalore"
+    },
+    "pan": "OHWQG0796D",
+    "aadhaar": "216563686675"
+  },
+  "conversation_history": [
+    {
+      "timestamp": "2025-07-21T14:50:52.874754",
+      "speaker": "User",
+      "message": "needed a bike loan of 4 lakhs in bangalore"
+    },
+    {
+      "timestamp": "2025-07-21T14:51:12.874079",
+      "speaker": "System",
+      "message": "Please provide your PAN or Aadhaar number."
+    },
+    {
+      "timestamp": "2025-07-21T14:51:12.877935",
+      "speaker": "User",
+      "message": "{\"pan\": \"DVNFN2660N\", \"aadhaar\": \"216563686675\"}"
+    },
+    {
+      "timestamp": "2025-07-21T14:51:31.549672",
+      "speaker": "System",
+      "message": "The PAN number you provided does not match your Aadhaar record. Please provide the correct PAN number."
+    },
+    {
+      "timestamp": "2025-07-21T14:51:31.549672",
+      "speaker": "User",
+      "message": "{\"pan\": \"OHWQG0796D\", \"aadhaar\": \"216563686675\"}"
+    }
+  ],
+  "agent_state": {},
+  "orchestrator_state": {
+    "escalation_attempts": {
+      "3830248623389352223": 0,
+      "-4171650074798740452": 0,
+      "9050680872805299665": 1
+    },
+    "conversation_history": [
+      "System: Please provide your PAN or Aadhaar number.",
+      "User: {\"pan\": \"DVNFN2660N\", \"aadhaar\": \"216563686675\"}",
+      "System: The PAN number you provided does not match your Aadhaar record. Please provide the correct PAN number.",
+      "User: {\"pan\": \"OHWQG0796D\", \"aadhaar\": \"216563686675\"}"
+    ],
+    "captured_agreement": null,
+    "captured_loan_details": null,
+    "captured_tool_outputs": {},
+    "stored_existing_user_data": null,
+    "current_question_type": null
+  },
+  "last_updated": "2025-07-21T14:51:31.560634",
+  "current_step_description": "Starting agent workflow",
+  "interrupted_at": "2025-07-21T14:56:12.908072"
+}

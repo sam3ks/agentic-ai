@@ -1,0 +1,93 @@
+{
+  "session_id": "loan_20250721_181246_9e4a52cf",
+  "created_at": "2025-07-21T18:12:46.632163",
+  "status": "interrupted",
+  "user_request": "need loan",
+  "workflow_step": 2,
+  "collected_data": {
+    "initial_loan_details": {
+      "purpose": "not_detected",
+      "amount": 0.0,
+      "city": "unknown"
+    },
+    "purpose": "bike loan",
+    "amount": "4 lakhs",
+    "pan": "AOGGX0057V",
+    "aadhaar": "347676851687"
+  },
+  "conversation_history": [
+    {
+      "timestamp": "2025-07-21T18:12:46.640166",
+      "speaker": "User",
+      "message": "need loan"
+    },
+    {
+      "timestamp": "2025-07-21T18:13:05.951008",
+      "speaker": "System",
+      "message": "What is the purpose of the loan you need?"
+    },
+    {
+      "timestamp": "2025-07-21T18:13:05.952708",
+      "speaker": "User",
+      "message": "{\"purpose\": \"bike loan\"}"
+    },
+    {
+      "timestamp": "2025-07-21T18:13:11.879474",
+      "speaker": "System",
+      "message": "What is the loan amount you are requesting?"
+    },
+    {
+      "timestamp": "2025-07-21T18:13:11.881241",
+      "speaker": "User",
+      "message": "{\"amount\": \"4 lakhs\"}"
+    },
+    {
+      "timestamp": "2025-07-21T18:13:30.241916",
+      "speaker": "System",
+      "message": "Please provide your PAN or Aadhaar number."
+    },
+    {
+      "timestamp": "2025-07-21T18:13:30.244297",
+      "speaker": "User",
+      "message": "{\"pan\": \"AOGGX0057V\", \"aadhaar\": \"347676851687\"}"
+    },
+    {
+      "timestamp": "2025-07-21T18:13:40.063882",
+      "speaker": "System",
+      "message": "The PAN number you provided does not match your Aadhaar record. Please provide the correct PAN number."
+    },
+    {
+      "timestamp": "2025-07-21T18:13:40.065155",
+      "speaker": "User",
+      "message": "{\"pan\": \"AOGGX0057V\", \"aadhaar\": \"347676851687\"}"
+    }
+  ],
+  "agent_state": {},
+  "orchestrator_state": {
+    "escalation_attempts": {
+      "4547129675650488204": 0,
+      "4739897198522223038": 0,
+      "7482574780742472249": 0,
+      "-7872692293596224861": 0,
+      "-5733474487020847354": 1
+    },
+    "conversation_history": [
+      "System: What is the purpose of the loan you need?",
+      "User: {\"purpose\": \"bike loan\"}",
+      "System: What is the loan amount you are requesting?",
+      "User: {\"amount\": \"4 lakhs\"}",
+      "System: Please provide your PAN or Aadhaar number.",
+      "User: {\"pan\": \"AOGGX0057V\", \"aadhaar\": \"347676851687\"}",
+      "System: The PAN number you provided does not match your Aadhaar record. Please provide the correct PAN number.",
+      "User: {\"pan\": \"AOGGX0057V\", \"aadhaar\": \"347676851687\"}"
+    ],
+    "captured_agreement": null,
+    "captured_loan_details": null,
+    "captured_tool_outputs": {},
+    "stored_existing_user_data": null,
+    "current_question_type": null
+  },
+  "last_updated": "2025-07-21T18:13:40.071358",
+  "current_step_description": "Starting agent workflow",
+  "interrupted_at": "2025-07-21T18:18:01.942724"
+}

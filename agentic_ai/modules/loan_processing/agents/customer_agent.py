@@ -7,7 +7,7 @@ class CustomerAgent(BaseAgent):
     Automated agent that mimics a user by providing required details (purpose, amount, city, PAN/Aadhaar)
     to the loan processing workflow. Useful for automation, testing, and demos.
     """
- 
+
     def __init__(self, profile=None):
         super().__init__()
         self.profile = profile or self._generate_random_profile()

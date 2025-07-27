@@ -1,0 +1,65 @@
+{
+  "session_id": "loan_20250721_150847_0edb9262",
+  "created_at": "2025-07-21T15:08:47.695187",
+  "status": "interrupted",
+  "user_request": "need loan",
+  "workflow_step": 2,
+  "collected_data": {
+    "initial_loan_details": {
+      "purpose": "car and bike loan",
+      "amount": 400000.0,
+      "city": "unknown"
+    },
+    "purpose": "car and bike loan",
+    "amount": "4 lakhs"
+  },
+  "conversation_history": [
+    {
+      "timestamp": "2025-07-21T15:08:47.698922",
+      "speaker": "User",
+      "message": "need loan"
+    },
+    {
+      "timestamp": "2025-07-21T15:08:57.652695",
+      "speaker": "System",
+      "message": "What is the purpose of the loan?"
+    },
+    {
+      "timestamp": "2025-07-21T15:08:57.653872",
+      "speaker": "User",
+      "message": "{\"purpose\": \"car and bike loan\"}"
+    },
+    {
+      "timestamp": "2025-07-21T15:09:25.075342",
+      "speaker": "System",
+      "message": "What is the loan amount you are requesting?"
+    },
+    {
+      "timestamp": "2025-07-21T15:09:25.077892",
+      "speaker": "User",
+      "message": "{\"amount\": \"4 lakhs\"}"
+    }
+  ],
+  "agent_state": {},
+  "orchestrator_state": {
+    "escalation_attempts": {
+      "7931029795515052953": 0,
+      "-3142212689358737174": 0,
+      "4279438952160198053": 1
+    },
+    "conversation_history": [
+      "System: What is the purpose of the loan?",
+      "User: {\"purpose\": \"car and bike loan\"}",
+      "System: What is the loan amount you are requesting?",
+      "User: {\"amount\": \"4 lakhs\"}"
+    ],
+    "captured_agreement": null,
+    "captured_loan_details": null,
+    "captured_tool_outputs": {},
+    "stored_existing_user_data": null,
+    "current_question_type": null
+  },
+  "last_updated": "2025-07-21T15:10:23.481589",
+  "current_step_description": "Starting agent workflow",
+  "interrupted_at": "2025-07-21T15:10:04.131141"
+}

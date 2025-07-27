@@ -4,9 +4,18 @@ import re
 import json
 import numpy as np
 import os
+import logging
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from agentic_ai.core.config.constants import AVAILABLE_CITIES
+
+# Suppress SentenceTransformer progress bars and reduce logging
+logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
+os.environ['TRANSFORMERS_VERBOSITY'] = 'error'
+
+# Disable tqdm progress bars globally
+import tqdm
+tqdm.tqdm.disable = True
  
 def load_loan_purpose_categories():
     """
@@ -369,3 +378,47 @@ def get_sentence_transformer_model():
             print(f"[DEBUG] Error loading SentenceTransformer model: {str(e)}")
             return None
     return _sentence_transformer_model
+
+def parse_amount_string(amount_str):
+    """
+    Parse amount strings like '5 lakhs', '2 crores', '50000' to numeric values.
+    
+    Args:
+        amount_str: String representation of amount
+        
+    Returns:
+        float: Numeric amount value
+    """
+    if not amount_str:
+        return 0.0
+        
+    # If already a number, return it
+    if isinstance(amount_str, (int, float)):
+        return float(amount_str)
+        
+    # Convert to lowercase and clean
+    amount_str = str(amount_str).lower().strip()
+    
+    # Remove currency symbols and commas
+    amount_str = re.sub(r'[₹,]', '', amount_str)
+    
+    # Extract number and unit
+    amount_match = re.search(r'(\d+(?:\.\d+)?)\s*(lakh|lakhs|crore|crores)?', amount_str)
+    
+    if amount_match:
+        number = float(amount_match.group(1))
+        unit = amount_match.group(2)
+        
+        if unit and 'lakh' in unit:
+            return number * 100000  # 1 lakh = 100,000
+        elif unit and 'crore' in unit:
+            return number * 10000000  # 1 crore = 10,000,000
+        else:
+            return number
+    
+    # Try to extract just the number if no units
+    number_match = re.search(r'(\d+(?:\.\d+)?)', amount_str)
+    if number_match:
+        return float(number_match.group(1))
+    
+    return 0.0

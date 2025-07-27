@@ -18,8 +18,9 @@ def initialize_database():
                 aadhaar_number TEXT UNIQUE NOT NULL,
                 name TEXT NOT NULL,
                 age INTEGER NOT NULL,
-                marital_status TEXT NOT NULL,
-                gender TEXT NOT NULL
+                gender TEXT NOT NULL,
+                address TEXT NOT NULL,
+                dob TEXT NOT NULL
             )
         ''')
         conn.commit()
@@ -40,7 +41,7 @@ def get_aadhaar_details():
     
     conn = sqlite3.connect(DB_FILE)
     cur = conn.execute('''
-        SELECT name, age, marital_status, gender 
+        SELECT name, age, gender, address, dob 
         FROM aadhaar_details WHERE aadhaar_number = ?
     ''', (aadhaar,))
     row = cur.fetchone()
@@ -50,8 +51,9 @@ def get_aadhaar_details():
         return jsonify({
             "name": row[0],
             "age": row[1],
-            "marital_status": row[2],
-            "gender": row[3]
+            "gender": row[2],
+            "address": row[3],
+            "dob": row[4]
         })
     else:
         return jsonify({"error": "Aadhaar number not found"}), 404
@@ -64,18 +66,19 @@ def add_aadhaar_details():
     aadhaar = data.get('aadhaar_number')
     name = data.get('name')
     age = data.get('age')
-    marital_status = data.get('marital_status')
     gender = data.get('gender')
+    address = data.get('address')
+    dob = data.get('dob')
     
-    if not all([aadhaar, name, age, marital_status, gender]):
-        return jsonify({"error": "Required fields: aadhaar_number, name, age, marital_status, gender"}), 400
+    if not all([aadhaar, name, age, gender, address, dob]):
+        return jsonify({"error": "Required fields: aadhaar_number, name, age, gender, address, dob"}), 400
     
     conn = sqlite3.connect(DB_FILE)
     conn.execute('''
         INSERT OR REPLACE INTO aadhaar_details 
-        (aadhaar_number, name, age, marital_status, gender)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (aadhaar, name, age, marital_status, gender))
+        (aadhaar_number, name, age, gender, address, dob)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (aadhaar, name, age, gender, address, dob))
     conn.commit()
     conn.close()
     return jsonify({"status": "success"})

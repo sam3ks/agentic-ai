@@ -1,26 +1,29 @@
 {
-  "esc_1752572180_0": {
-    "escalation_id": "esc_1752572180_0",
-    "timestamp": "2025-07-15T15:06:20.389848",
+  "esc_1752643788_0": {
+    "escalation_id": "esc_1752643788_0",
+    "timestamp": "2025-07-16T10:59:48.449763",
     "context": {
       "agent_name": "UserInteractionAgent",
-      "user_input": "123452123456",
-      "question": "Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+      "user_input": "USER_EXIT",
+      "question": "Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
       "failure_count": 3,
       "conversation_history": [
-        "System: What is the purpose of your loan?",
-        "User: Based on the initial request, the loan purpose is 'vehicle purchase'.",
-        "System: How much loan amount do you need?",
-        "User: 12345432345",
-        "System: Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
-        "User: 234509876545678",
-        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
-        "User: 123452123456"
+        "System: Please provide the purpose of the loan you need.",
+        "User: Bike loan",
+        "System: Please provide the loan amount you need.",
+        "User: 2 lakhs",
+        "System: Please provide your PAN or Aadhaar number.",
+        "User: USER_EXIT",
+        "System: Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
+        "User: USER_EXIT",
+        "System: Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
+        "User: USER_EXIT"
       ],
-      "error_message": "Loan amount too large. Maximum is \u20b91,00,00,000.",
+      "error_message": "Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits).",
       "escalated_from": "orchestrator"
     },
-    "status": "waiting_for_human",
-    "priority": "MEDIUM"
+    "status": "timeout",
+    "priority": "MEDIUM",
+    "timeout_at": "2025-07-16T11:08:00.487842"
   }
 }

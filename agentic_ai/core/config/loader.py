@@ -39,6 +39,30 @@ class LangChainLLMWrapper(LLM):
                 # If JSON parsing fails, continue with original response
                 pass
         
+        # CRITICAL: Reject responses with fake "Observation:" lines
+        if "Observation:" in response:
+            print("[DEBUG] Detected hallucinated Observation - replacing with simple action")
+            # Extract just the thought and first action if any
+            lines = response.split('\n')
+            thought_line = None
+            action_line = None
+            action_input_line = None
+            
+            for line in lines:
+                line = line.strip()
+                if line.startswith("Thought:") and thought_line is None:
+                    thought_line = line
+                elif line.startswith("Action:") and action_line is None:
+                    action_line = line
+                elif line.startswith("Action Input:") and action_input_line is None:
+                    action_input_line = line
+                    break
+            
+            if thought_line and action_line and action_input_line:
+                response = f"{thought_line}\n{action_line}\n{action_input_line}"
+            else:
+                response = "Thought: I need to ask for user input.\nAction: UserInteraction\nAction Input: Please provide more information."
+
         # Make sure response starts with "Thought:"
         if not response.startswith("Thought:"):
             response = f"Thought: {response}"
@@ -57,57 +81,9 @@ class LangChainLLMWrapper(LLM):
                 
         # If we have a Thought but no Action or Final Answer, append a default one
         if has_thought and not has_action_or_final:
-            # Try to infer what tool the model was trying to use
-            lower_resp = response.lower()
-            tool_map = {
-                "dataquery": "DataQuery",
-                "userinteraction": "UserInteraction", 
-                "user interaction": "UserInteraction",
-                "geopolicycheck": "GeoPolicyCheck",
-                "geo policy": "GeoPolicyCheck",
-                "riskassessment": "RiskAssessment", 
-                "risk assessment": "RiskAssessment",
-                "salarysheetgenerator": "SalarySheetGenerator",
-                "salarysheetretriever": "SalarySheetRetriever"
-            }
-            
-            selected_tool = None
-            for keyword, tool_name in tool_map.items():
-                if keyword in lower_resp:
-                    selected_tool = tool_name
-                    break
-                    
-            if not selected_tool:
-                # Check if it seems like a final answer
-                final_indicators = ["loan", "approved", "rejected", "interest", "rate", "application"]
-                final_answer_likely = any(indicator in lower_resp for indicator in final_indicators)
-                
-                if final_answer_likely:
-                    response += "\nFinal Answer: " + response.split("Thought:")[1].strip()
-                else:
-                    # Default to UserInteraction as safest option
-                    response += "\nAction: UserInteraction"
-                    response += "\nAction Input: Please provide more information for your loan application."
-            else:
-                response += f"\nAction: {selected_tool}"
-                
-                # Try to extract appropriate input based on content
-                if selected_tool == "UserInteraction":
-                    # Look for question marks in the text
-                    question_match = re.search(r"[^.?!]*\?", lower_resp)
-                    if question_match:
-                        response += f"\nAction Input: {question_match.group(0).strip()}"
-                    else:
-                        response += "\nAction Input: Please provide more information for your loan application."
-                elif selected_tool == "DataQuery":
-                    # Look for PAN or Aadhaar-like patterns
-                    id_match = re.search(r"[A-Z0-9]{10,12}", response)
-                    if id_match:
-                        response += f"\nAction Input: {id_match.group(0)}"
-                    else:
-                        response += "\nAction Input: [PAN/Aadhaar provided by user]"
-                else:
-                    response += f"\nAction Input: [Input for {selected_tool}]"
+            # Default to UserInteraction as safest option
+            response += "\nAction: UserInteraction"
+            response += "\nAction Input: Please provide more information for your loan application."
                     
         return response
 

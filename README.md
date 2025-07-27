@@ -1,144 +1,118 @@
 # 🧠 Agentic AI for Banking, Loans, and Fraud Detection
 
-This project is an **Agentic AI system** for banking, loan processing, and fraud detection, integrating LangChain, LLMs (Google Generative AI, Groq), and human-in-the-loop escalation. It features modular agents, a langchain orchestrator, and a Streamlit UI.
+This project is an **Agentic AI system** for banking, loan processing, and fraud detection, built with LangChain, LangGraph, and LLMs (Groq, OpenAI). It features modular agents, robust session management, CLI and Streamlit frontends, and escalation to human operators.
 
-## 📁 Project Structure
+---
 
-```text
-├── human_operator_dashboard.py               # CLI dashboard for escalations
-├── run_loan_cli.py                           # CLI for loan workflow
-├── run_loan_test.py                          # Test runner for agents
-├── requirements.txt                          # Python dependencies
-├── sample_salary_template.txt/pdf            # Sample templates
-├── agentic_ai/                               # Main package
-│   ├── core/agent/                           # Agent logic
-│   ├── core/config/                          # Configs
-│   ├── core/llm/                             # LLM integration
-│   ├── core/orchestrator/                    # Workflow orchestrators
-│   ├── core/utils/                           # Utilities
-│   ├── modules/loan_processing/              # Loan agent modules
-│   ├── scripts/                              # Scripts
-│   ├── streamlit_app/run_loan_streamlit.py   # Main Streamlit UI
-│   └── tests/                                # Unit tests
-├── scripts/aadhaar_details_api.py            # Aadhaar API
-├── scripts/credit_score_api.py               # Credit Score API
-├── streamlit_app/run_loan_streamlit.py       # Streamlit frontend
-├── escalation_data/                          # Escalation/session data
+## 📁 Project Structure & Key Modules
+
+```
+agentic_ai/
+  core/
+    agent/           # Abstract and base agent classes
+    config/          # Constants, config loader, logger, reliability
+    llm/             # LLM wrappers (Groq, OpenAI, Ollama), factory
+    orchestrator/    # Workflow orchestration (StateGraph, agent executor)
+    session/         # Persistent session management
+    utils/           # Formatting, fuzzy matching, monitoring, parsing, validators
+  modules/
+    loan_processing/
+      agents/        # Specialized agents: user interaction, data query, geo-policy, risk, agreement, salary extraction, escalation, human
+      app/           # CLI entrypoint for loan processing
+      data/          # Loan policy JSON, sample loan dataset
+      orchestrator/  # Main orchestrator, escalation orchestrator
+      services/      # Data service, PDF parser
+      prompts/       # Prompt templates
+      tests/         # Test cases for loan processing
+  scripts/           # Utility scripts (rate limit verification, Aadhaar, credit score)
+docs/                # Architecture documentation
+streamlit_app/       # Streamlit frontend for loan workflow
+session_data/        # Persistent session files
+escalation_data/     # Human escalation session and response files
+test_flows/          # Example flows for testing
+uploaded_files/      # Uploaded salary PDFs
+human_operator_dashboard.py # CLI dashboard for human escalation
+run_loan_cli.py      # CLI entrypoint for loan processing
+requirements.txt     # Python dependencies
+LICENSE, README.md   # License and documentation
 ```
 
-## 🛠️ Technologies Used
-
-- **Python 3.11.9**
-- **LangChain** (LLM orchestration)
-- **Google Generative AI, Groq, OpenAI** (LLM backends)
-- **Flask** (API)
-- **Streamlit** (Frontend UI)
-- **Sentence Transformers** (Semantic matching)
-- **fuzzywuzzy** (Fuzzy string matching)
-- **PyPDF2** (PDF parsing)
-
-## ⚙️ How It Works
-
-1. **Loan Processing Workflow**: Modular agents handle customer, risk, geo-policy, agreement, and more using LLMs and utility modules.
-2. **Streamlit UI**: Main user interface for loan application and status tracking.
-3. **Human Operator Dashboard**: CLI tool for handling escalated cases when automation fails.
-4. **API's**: Aadhaar and Credit Score APIs provide external data for loan processing.
+---
 
 ## 🚀 Setup Instructions
 
-### ✅ Prerequisites
+1. **Python 3.11.9** required.
+2. Install dependencies:
+   ```
+   pip install --upgrade pip
+   pip install -r requirements.txt
+   ```
+3. Set environment variables in `.env`:
+   ```
+   OPENAI_API_KEY=your_openai_api_key
+   GROQ_API_KEY=your_groq_api_key
+   ```
+4. Run the CLI:
+   ```
+   python run_loan_cli.py
+---
 
-- Python 3.11.9
-- Install dependencies:
-  ```bash
-  pip install -r requirements.txt
+## 🏗️ Main Components
+
+- **Loan Processing Workflow**: Modular agents for user interaction, data query, geo-policy validation, risk assessment, agreement presentation, salary extraction, and escalation.
+- **Session Management**: Persistent sessions (resume, list, status) via `SessionManager`.
+- **CLI Frontend**: `run_loan_cli.py` for interactive or automated loan processing.
+- **Human Escalation**: Automated escalation to human operators via dashboard if agents fail.
+- **Data & Policy**: Loan purpose policy (`loan_purpose_policy.json`), sample loans (`sample_loans.csv`).
+
+
+## 💡 Capabilities
+
+- **Banking Agent**: Account, card, transaction services.
+- **Fraud Agent**: Risk score analysis, anomaly detection, compliance checks.
+- **Loan Agent**: Credit risk profiling, EMI affordability, geo-policy checks.
+- **Session Management**: Resume, list, and status of loan sessions.
+- **Human Escalation**: Operator dashboard for unresolved cases.
+
+---
+
+## 📌 Notes
+
+## ⏸️ How to Interrupt and Resume a Loan Session (Step-by-Step)
+
+You can interrupt a loan session at any time and resume it later using the CLI. This is useful for long workflows or when you need to pause and continue later.
+
+### Interrupting a Session
+1. **Start a loan session** using the CLI:
+   ```
+   python run_loan_cli.py
+   ```
+2. **At any prompt**, press `Ctrl+C` to pause the session.
+3. The session state will be saved automatically in the `session_data/` folder as a JSON file (named with timestamp and session ID).
+
+### Resuming a Session
+
+1. **Resume a session** by providing the session ID:
+   ```
+   python run_loan_cli.py <session_id>
+   ```
+   Replace `<session_id>` with the actual ID from the loan session which was paused.
+3. The workflow will continue from where you left off.
+
+### Additional Tips
+- You can check the status of a session:
   ```
-
-### 🔑 Environment Variables
-
-Set your LLM API keys in a `.env` file:
-```env
-OPENAI_API_KEY=your_openai_key
-GROQ_API_KEY=your_groq_key
-GOOGLE_API_KEY=your_google_api_key
-```
-
-## 🏃 How to Run (Multi-Terminal Setup)
-
-You need **4 terminals** running in parallel for full functionality:
-
-
-### 1️⃣ Aadhaar Details API (Flask)
-**File:** `scripts/aadhaar_details_api.py`
-```bash
-python scripts/aadhaar_details_api.py
-# Runs on port 5002
-```
-
-### 2️⃣ Credit Score API (Flask)
-**File:** `scripts/credit_score_api.py`
-```bash
-python scripts/credit_score_api.py
-# Runs on port 5001
-```
-
-### 3️⃣ Main Streamlit App (Frontend)
-**File:** `streamlit_app/run_loan_streamlit.py`
-```bash
-streamlit run streamlit_app/run_loan_streamlit.py
-```
-
-### 4️⃣ Human Operator Dashboard (CLI)
-**File:** `human_operator_dashboard.py` (or `agentic_ai/human_operator_dashboard.py`)
-```bash
-python human_operator_dashboard.py
-```
+  python run_loan_cli.py --status <session_id>
+  ```
+- All session files are stored in `session_data/`.
+- Interrupted sessions can be resumed multiple times until completed.
 
 ---
 
-## 👨‍💼 Human Operator Dashboard
-
-The dashboard is a CLI tool for handling escalated loan cases. It allows human operators to:
-- View active escalations (from `escalation_data/active_sessions.json`)
-- Respond to cases and provide decisions
-- Monitor statistics and view conversation history
-
-**How to use:**
-1. Start the dashboard in a terminal:
-   ```bash
-   python human_operator_dashboard.py
-   ```
-   Or, if using the package version:
-   ```bash
-   python agentic_ai/human_operator_dashboard.py
-   ```
-2. The dashboard will display active sessions and prompt for actions (e.g., approve/reject, add comments).
-3. Respond to escalated cases as needed. Your input will be saved and used to resolve the loan workflow. All operator actions are logged in `escalation_data/human_responses.json`.
-
 ---
 
-## 📝 Additional Notes
-
-- **Testing:**
-  - Run `run_loan_test.py` for agent tests.
-  - Unit tests are in `agentic_ai/tests/`.
-- **Extensibility:**
-  - Add new agents in `agentic_ai/modules/loan_processing/`
-  - Update orchestrators in `agentic_ai/core/orchestrator/`
-- **Data:**
-  - Sample data and templates are in `sample_salary_template.txt`, `sample_salarypdf_template.pdf`, and `uploaded_files/`
-
----
-
-## 📚 References
-
-- [LangChain Documentation](https://python.langchain.com/)
-- [Streamlit Documentation](https://docs.streamlit.io/)
-- [Flask Documentation](https://flask.palletsprojects.com/)
-
----
-
-## � License
+## 📃 License
 
 This project is for educational and demonstration purposes.
+
 ---

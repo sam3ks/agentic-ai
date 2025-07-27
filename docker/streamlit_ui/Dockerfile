@@ -1,0 +1,12 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt ./
+RUN pip install --default-timeout=300 --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 8501
+
+CMD ["streamlit", "run", "streamlit_app/run_loan_streamlit.py"]

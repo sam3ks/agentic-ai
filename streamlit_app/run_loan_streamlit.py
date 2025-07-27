@@ -104,30 +104,10 @@ def run_agent_workflow(user_request, input_queue, output_queue):
         st.session_state.awaiting_input = True  # Set to True when we start processing
         result = orchestrator.process_application(user_request)
         
-        # Process the result based on its type
-        if isinstance(result, str):
-            if "LOAN AGREEMENT DIGITALLY ACCEPTED" in result or "LOAN DECLINED" in result:
-                # Final acceptance/rejection already sent to output queue by orchestrator
-                pass
-            else:
-                # Regular string result
-                output_queue.put(result)
-        elif isinstance(result, list):
-            for msg in result:
-                if isinstance(msg, dict) and "loan_details" in msg:
-                    # Special handling for loan details
-                    output_queue.put(msg)
-                else:
-                    # Regular message
-                    output_queue.put(msg)
-            
-            # Only send FINAL_RESULT if needed
-            last_msg = result[-1] if result else ""
-            if not any("LOAN AGREEMENT DIGITALLY ACCEPTED" in str(msg) or "LOAN DECLINED" in str(msg) for msg in result):
-                output_queue.put("FINAL_RESULT: " + str(last_msg))
-        
-        # Clear awaiting_input flag at the end
-        st.session_state.awaiting_input = False
+        # Since LangGraph streams intermediate steps, we don't need to process a final 'result' here.
+        # The output queue will be populated by the tools as they execute.
+        # We can put a final message to signal completion.
+        output_queue.put("WORKFLOW_COMPLETE")
         
     except Exception as e:
         output_queue.put(f"ERROR: {str(e)}")
@@ -215,8 +195,8 @@ if st.session_state.awaiting_input and st.session_state.agent_thread:
                 st.download_button(
                     label="Download Agreement",
                     data=agreement_text,
-                    file_name="loan_agreement.pdf",
-                    mime="application/pdf",
+                    file_name="loan_agreement.txt",
+                    mime="text/plain",
                     key=f"download_agreement_{hash(agreement_text[:100])}"
                 )
 
@@ -367,7 +347,13 @@ if st.session_state.awaiting_input and st.session_state.agent_thread:
             if not isinstance(message, str):
                 continue  # Skip non-string messages
                 
-            if message.startswith("FINAL_RESULT:"):
+            if message == "WORKFLOW_COMPLETE":
+                st.session_state.workflow_complete = True
+                st.session_state.awaiting_input = False
+                st.session_state.current_question = ""
+                st.success("Loan application workflow completed!")
+                break
+            elif message.startswith("FINAL_RESULT:"):
                 result = message[13:]  # Remove "FINAL_RESULT:" prefix
                 st.session_state.conversation.append(f"Agent: {result}")
                 st.session_state.workflow_complete = True

@@ -1,72 +1,75 @@
-# Core Dependencies
-pandas
-numpy
-python-dotenv
+# Comprehensive requirements.txt for Agentic AI Banking Project
+# Core dependencies with version pins for reproducibility
+ 
+# Core Python Libraries
+pandas==2.3.1
+numpy==1.26.4
+python-dotenv==1.1.1
+ 
+# LLM APIs
+openai==1.95.1
+groq==0.30.0
+ 
+# LangChain Framework - Complete Suite
+langchain==0.1.20
+langchain-core==0.1.53
+langchain-groq==0.1.5
+langchain-community==0.0.38
+langchain-text-splitters==0.0.1
+langchainhub==0.1.15
+langgraph==0.0.30
+langsmith==0.1.147
+ 
+# Machine Learning and NLP
+sentence-transformers==5.0.0
+scikit-learn==1.7.0
+transformers==4.53.2
+torch==2.7.1
+ 
+# # TensorFlow/Keras (for ML models)
+tensorflow==2.19.0
+tf-keras==2.19.0
+ 
+# Web Framework and UI
+streamlit==1.46.1
+streamlit-chat==0.1.1
+flask==3.1.1
+flask-cors==6.0.1
+flask-socketio==5.5.1
+ 
+# HTTP Client Libraries
+requests==2.32.4
+aiohttp==3.12.14
+httpx==0.28.1
+ 
+# PDF Processing
+PyPDF2==3.0.1
 
-# Groq AI Client
-groq
-
-# LangChain Dependencies
-langchain
-langchain-core
-langchain-groq
-langchain-community
-
-# Additional utilities
-regex
-typing-extensions
-sentence-transformers
-
-# Optional but recommended for better performance
-aiohttp
-requests
-
-# For development and testing (optional)
-pytest
-pytest-asyncio
-black
-flake8
-
-# Core Dependencies
-pandas
-numpy
-python-dotenv
-
-# Groq AI Client
-groq
-
-# LangChain Dependencies
-langchain
-langchain-core
-langchain-groq
-langchain-community
-
-# Additional utilities
-regex
-typing-extensions
-sentence-transformers
-
-# Optional but recommended for better performance
-aiohttp
-requests
-
-# For development and testing (optional)
-pytest
-pytest-asyncio
-black
-flake8
-
-openai
-click
-fuzzywuzzy
-python-Levenshtein
-PyPDF2
-flask
-flask-cors
-
-#Frontend Dependencies
-flask-socketio
-streamlit
-streamlit-chat
-tf-keras
-tensorflow
+# Text Processing and Fuzzy Matching
+regex==2024.11.6
+fuzzywuzzy==0.18.0
+python-Levenshtein==0.27.1
+ 
+# Data Validation and Serialization
+pydantic==2.11.7
+dataclasses-json==0.6.7
+ 
+# CLI and Utilities
+click==8.2.1
+typing_extensions==4.14.1
+ 
+# Database
+SQLAlchemy==2.0.41
+ 
+# Development and Testing
+pytest==8.4.1
+pytest-asyncio==1.0.0
+black==25.1.0
+flake8==7.3.0
+ 
+# System Dependencies
+colorama==0.4.6
+certifi==2025.7.14
+python-dateutil==2.9.0.post0
+PyYAML==6.0.2
+ 

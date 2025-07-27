@@ -508,13 +508,8 @@
       "error_message": "Loan amount too large. Maximum is \u20b91,00,00,000.",
       "escalated_from": "orchestrator"
     },
-    "status": "resolved",
-    "priority": "MEDIUM",
-    "human_response": {
-      "response": "ERTREWERGTWERTGTRE",
-      "timestamp": "Jul 16, 2025, 10:45 AM"
-    },
-    "resolved_at": "2025-07-16T10:45:22.370565"
+    "status": "waiting_for_human",
+    "priority": "MEDIUM"
   },
   "esc_1751628194_20": {
     "escalation_id": "esc_1751628194_20",
@@ -570,118 +565,23 @@
     },
     "resolved_at": "2025-07-04T17:04:52.390745"
   },
-  "esc_1752576327_22": {
-    "escalation_id": "esc_1752576327_22",
-    "timestamp": "2025-07-15T16:15:27.901389",
+  "esc_1752495747_22": {
+    "escalation_id": "esc_1752495747_22",
+    "timestamp": "2025-07-14T17:52:27.664827",
     "context": {
       "agent_name": "UserInteractionAgent",
-      "user_input": "123454123453234",
-      "question": "Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
-      "failure_count": 3,
-      "conversation_history": [
-        "System: What is the purpose of your loan?",
-        "User: Car Loan",
-        "System: How much loan amount do you need?",
-        "User: 12345432123452345",
-        "System: Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
-        "User: 123454322345532",
-        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
-        "User: 123454123453234"
-      ],
-      "error_message": "Loan amount too large. Maximum is \u20b91,00,00,000.",
-      "escalated_from": "orchestrator"
-    },
-    "status": "resolved",
-    "priority": "MEDIUM",
-    "human_response": {
-      "response": "Please Enter a small amount less than 1 crore",
-      "timestamp": "Jul 15, 2025, 04:16 PM"
-    },
-    "resolved_at": "2025-07-15T16:16:36.081723"
-  },
-  "esc_1752581356_23": {
-    "escalation_id": "esc_1752581356_23",
-    "timestamp": "2025-07-15T17:39:16.514703",
-    "context": {
-      "agent_name": "UserInteractionAgent",
-      "user_input": "3456789876543",
-      "question": "Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
-      "failure_count": 3,
-      "conversation_history": [
-        "System: What is the purpose of your loan?",
-        "User: Bike loan",
-        "System: How much loan amount do you need?",
-        "User: 123454321234",
-        "System: Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
-        "User: 12342123421234",
-        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
-        "User: 3456789876543"
-      ],
-      "error_message": "Loan amount too large. Maximum is \u20b91,00,00,000.",
-      "escalated_from": "orchestrator"
-    },
-    "status": "resolved",
-    "priority": "MEDIUM",
-    "human_response": {
-      "response": "Please enter small amount large amount will not be accepted ",
-      "timestamp": "Jul 15, 2025, 05:39 PM"
-    },
-    "resolved_at": "2025-07-15T17:39:53.951124"
-  },
-  "esc_1752642563_24": {
-    "escalation_id": "esc_1752642563_24",
-    "timestamp": "2025-07-16T10:39:23.435991",
-    "context": {
-      "agent_name": "UserInteractionAgent",
-      "user_input": "2345678987654",
-      "question": "Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
-      "failure_count": 3,
-      "conversation_history": [
-        "System: What is the purpose of your loan?",
-        "User: I Want Bike Loan",
-        "System: How much loan amount do you need?",
-        "User: 1234567654322",
-        "System: Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
-        "User: 23456787654321",
-        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
-        "User: 2345678987654"
-      ],
-      "error_message": "Loan amount too large. Maximum is \u20b91,00,00,000.",
-      "escalated_from": "orchestrator"
-    },
-    "status": "resolved",
-    "priority": "MEDIUM",
-    "human_response": {
-      "response": "Try to give the small number ",
-      "timestamp": "Jul 16, 2025, 10:40 AM"
-    },
-    "resolved_at": "2025-07-16T10:40:57.334382"
-  },
-  "esc_1752643169_25": {
-    "escalation_id": "esc_1752643169_25",
-    "timestamp": "2025-07-16T10:49:29.948433",
-    "context": {
-      "agent_name": "UserInteractionAgent",
-      "user_input": "USER_EXIT",
+      "user_input": "An error occurred: ",
       "question": "Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
       "failure_count": 3,
       "conversation_history": [
-        "System: What is the purpose of your loan?",
-        "User: I Want Bike Loan",
-        "System: How much loan amount do you need?",
-        "User: 1234567654322",
-        "System: Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
-        "User: 23456787654321",
-        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
-        "User: 2345678987654",
-        "System: Please specify the exact loan amount you need in rupees.",
-        "User: 2 lakhs",
+        "System: Please provide the loan amount you wish to apply for.",
+        "User: 4 lakhs",
         "System: Please provide your PAN or Aadhaar number.",
-        "User: USER_EXIT",
+        "User: An error occurred: ",
         "System: Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
-        "User: USER_EXIT",
+        "User: An error occurred: ",
         "System: Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
-        "User: USER_EXIT"
+        "User: An error occurred: "
       ],
       "error_message": "Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits).",
       "escalated_from": "orchestrator"
@@ -689,28 +589,107 @@
     "status": "resolved",
     "priority": "MEDIUM",
     "human_response": {
-      "response": "Please consent",
-      "timestamp": "Jul 16, 2025, 10:49 AM"
+      "response": "Enter correctly",
+      "timestamp": "Jul 14, 2025, 05:53 PM"
     },
-    "resolved_at": "2025-07-16T10:49:55.326821"
+    "resolved_at": "2025-07-14T17:53:43.832774"
   },
-  "esc_1752668650_26": {
-    "escalation_id": "esc_1752668650_26",
-    "timestamp": "2025-07-16T17:54:10.800366",
+  "esc_1752644630_23": {
+    "escalation_id": "esc_1752644630_23",
+    "timestamp": "2025-07-16T11:13:50.471474",
     "context": {
       "agent_name": "UserInteractionAgent",
-      "user_input": "USER_EXIT",
+      "user_input": "1234565321234567",
+      "question": "Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. Please provide the loan amount you are requesting.",
+      "failure_count": 3,
+      "conversation_history": [
+        "System: Please provide the loan amount you are requesting.",
+        "User: 1234567654321234567",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Please provide the loan amount you are requesting.",
+        "User: 345678765432123456",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. Please provide the loan amount you are requesting.",
+        "User: 1234565321234567"
+      ],
+      "error_message": "Loan amount too large. Maximum is \u20b91,00,00,000.",
+      "escalated_from": "orchestrator"
+    },
+    "status": "resolved",
+    "priority": "MEDIUM",
+    "human_response": {
+      "response": "Enter small amount",
+      "timestamp": "Jul 16, 2025, 11:14 AM"
+    },
+    "resolved_at": "2025-07-16T11:14:20.499241"
+  },
+  "esc_1752659449_24": {
+    "escalation_id": "esc_1752659449_24",
+    "timestamp": "2025-07-16T15:20:49.685644",
+    "context": {
+      "agent_name": "UserInteractionAgent",
+      "user_input": "45678743234567",
+      "question": "Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. Please provide the loan amount you wish to apply for.",
+      "failure_count": 3,
+      "conversation_history": [
+        "System: Please provide the loan amount you wish to apply for.",
+        "User: 23456765432123456",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Please provide the loan amount you wish to apply for.",
+        "User: 234567643213456",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. Please provide the loan amount you wish to apply for.",
+        "User: 45678743234567"
+      ],
+      "error_message": "Loan amount too large. Maximum is \u20b91,00,00,000.",
+      "escalated_from": "orchestrator"
+    },
+    "status": "resolved",
+    "priority": "MEDIUM",
+    "human_response": {
+      "response": "enter the small number ",
+      "timestamp": "Jul 16, 2025, 03:21 PM"
+    },
+    "resolved_at": "2025-07-16T15:21:12.475352"
+  },
+  "esc_1752659665_25": {
+    "escalation_id": "esc_1752659665_25",
+    "timestamp": "2025-07-16T15:24:25.379044",
+    "context": {
+      "agent_name": "UserInteractionAgent",
+      "user_input": "123456765432123456",
+      "question": "Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. Please provide the loan amount you wish to apply for.",
+      "failure_count": 3,
+      "conversation_history": [
+        "System: Please provide the loan amount you wish to apply for.",
+        "User: 23456787654321234567",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Please provide the loan amount you wish to apply for.",
+        "User: 23456765432123456",
+        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. Please provide the loan amount you wish to apply for.",
+        "User: 123456765432123456"
+      ],
+      "error_message": "Loan amount too large. Maximum is \u20b91,00,00,000.",
+      "escalated_from": "orchestrator"
+    },
+    "status": "resolved",
+    "priority": "MEDIUM",
+    "human_response": {
+      "response": "enter the small amount",
+      "timestamp": "Jul 16, 2025, 03:24 PM"
+    },
+    "resolved_at": "2025-07-16T15:24:42.427993"
+  },
+  "esc_1753075117_26": {
+    "escalation_id": "esc_1753075117_26",
+    "timestamp": "2025-07-21T10:48:37.417920",
+    "context": {
+      "agent_name": "UserInteractionAgent",
+      "user_input": "{\"pan\": \"USER_EXIT\"}",
       "question": "Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
       "failure_count": 3,
       "conversation_history": [
-        "System: How much loan amount do you need?",
-        "User: 3 lakhs",
         "System: Please provide your PAN or Aadhaar number.",
-        "User: USER_EXIT",
+        "User: {\"pan\": \"USER_EXIT\"}",
         "System: Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
-        "User: USER_EXIT",
+        "User: {\"pan\": \"USER_EXIT\"}",
         "System: Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
-        "User: USER_EXIT"
+        "User: {\"pan\": \"USER_EXIT\"}"
       ],
       "error_message": "Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits).",
       "escalated_from": "orchestrator"
@@ -718,55 +697,26 @@
     "status": "resolved",
     "priority": "MEDIUM",
     "human_response": {
-      "response": "Please consent, for usto proceed forward. ",
-      "timestamp": "Jul 16, 2025, 05:55 PM"
+      "response": "Please give your consent to proceed forward.",
+      "timestamp": "Jul 21, 2025, 10:49 AM"
     },
-    "resolved_at": "2025-07-16T17:55:43.854794"
+    "resolved_at": "2025-07-21T10:49:07.619461"
   },
-  "esc_1752669424_27": {
-    "escalation_id": "esc_1752669424_27",
-    "timestamp": "2025-07-16T18:07:04.389971",
+  "esc_1753076887_27": {
+    "escalation_id": "esc_1753076887_27",
+    "timestamp": "2025-07-21T11:18:07.697232",
     "context": {
       "agent_name": "UserInteractionAgent",
-      "user_input": "1",
-      "question": "Loan amount too small. Minimum is \u20b91,000. Loan amount too small. Minimum is \u20b91,000. How much loan amount do you need?",
-      "failure_count": 3,
-      "conversation_history": [
-        "System: How much loan amount do you need?",
-        "User: 1",
-        "System: Loan amount too small. Minimum is \u20b91,000. How much loan amount do you need?",
-        "User: 1",
-        "System: Loan amount too small. Minimum is \u20b91,000. Loan amount too small. Minimum is \u20b91,000. How much loan amount do you need?",
-        "User: 1"
-      ],
-      "error_message": "Loan amount too small. Minimum is \u20b91,000.",
-      "escalated_from": "orchestrator"
-    },
-    "status": "resolved",
-    "priority": "MEDIUM",
-    "human_response": {
-      "response": "Please enter small number to continue the workflow",
-      "timestamp": "Jul 16, 2025, 06:07 PM"
-    },
-    "resolved_at": "2025-07-16T18:07:45.563437"
-  },
-  "esc_1752730276_28": {
-    "escalation_id": "esc_1752730276_28",
-    "timestamp": "2025-07-17T11:01:16.802330",
-    "context": {
-      "agent_name": "UserInteractionAgent",
-      "user_input": "USER_EXIT",
+      "user_input": "{\"pan\": \"USER_EXIT\"}",
       "question": "Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
       "failure_count": 3,
       "conversation_history": [
-        "System: How much loan amount do you need?",
-        "User: 2 lakhs",
         "System: Please provide your PAN or Aadhaar number.",
-        "User: USER_EXIT",
+        "User: {\"pan\": \"USER_EXIT\"}",
         "System: Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
-        "User: USER_EXIT",
+        "User: {\"pan\": \"USER_EXIT\"}",
         "System: Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
-        "User: USER_EXIT"
+        "User: {\"pan\": \"USER_EXIT\"}"
       ],
       "error_message": "Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits).",
       "escalated_from": "orchestrator"
@@ -774,142 +724,81 @@
     "status": "resolved",
     "priority": "MEDIUM",
     "human_response": {
-      "response": "Please consent to the aadhaar details to continue the workflow ",
-      "timestamp": "Jul 17, 2025, 11:01 AM"
+      "response": "Please consent us to access your PAN related financial details , so that we can proceed forward with your loan application.",
+      "timestamp": "Jul 21, 2025, 11:19 AM"
     },
-    "resolved_at": "2025-07-17T11:01:47.480267"
+    "resolved_at": "2025-07-21T11:19:21.959535"
   },
-  "esc_1752730382_29": {
-    "escalation_id": "esc_1752730382_29",
-    "timestamp": "2025-07-17T11:03:02.530566",
+  "esc_1753077168_28": {
+    "escalation_id": "esc_1753077168_28",
+    "timestamp": "2025-07-21T11:22:48.437607",
     "context": {
       "agent_name": "UserInteractionAgent",
-      "user_input": "4",
-      "question": "Loan amount too small. Minimum is \u20b91,000. Loan amount too small. Minimum is \u20b91,000. How much loan amount do you need?",
+      "user_input": "{\"pan\": \"USER_EXIT\"}",
+      "question": "Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
       "failure_count": 3,
       "conversation_history": [
-        "System: How much loan amount do you need?",
-        "User: 4",
-        "System: Loan amount too small. Minimum is \u20b91,000. How much loan amount do you need?",
-        "User: 4",
-        "System: Loan amount too small. Minimum is \u20b91,000. Loan amount too small. Minimum is \u20b91,000. How much loan amount do you need?",
-        "User: 4"
+        "System: Please provide your PAN or Aadhaar number.",
+        "User: {\"pan\": \"USER_EXIT\"}",
+        "System: Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
+        "User: {\"pan\": \"USER_EXIT\"}",
+        "System: Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
+        "User: {\"pan\": \"USER_EXIT\"}",
+        "System: Please provide your PAN or Aadhaar number.",
+        "User: {\"pan\": \"USER_EXIT\"}",
+        "System: Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
+        "User: {\"pan\": \"USER_EXIT\"}",
+        "System: Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
+        "User: {\"pan\": \"USER_EXIT\"}"
       ],
-      "error_message": "Loan amount too small. Minimum is \u20b91,000.",
+      "error_message": "Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits).",
       "escalated_from": "orchestrator"
     },
     "status": "resolved",
     "priority": "MEDIUM",
     "human_response": {
-      "response": "Please enter the large number greater than 1000/-",
-      "timestamp": "Jul 17, 2025, 11:03 AM"
+      "response": "lease consent us to access your Aadhar related financial details , so that we can proceed forward with your loan application.",
+      "timestamp": "Jul 21, 2025, 11:23 AM"
     },
-    "resolved_at": "2025-07-17T11:03:32.961339"
+    "resolved_at": "2025-07-21T11:23:37.648765"
   },
-  "esc_1752757261_30": {
-    "escalation_id": "esc_1752757261_30",
-    "timestamp": "2025-07-17T18:31:01.272065",
+  "esc_1753078159_29": {
+    "escalation_id": "esc_1753078159_29",
+    "timestamp": "2025-07-21T11:39:19.211991",
     "context": {
       "agent_name": "UserInteractionAgent",
-      "user_input": "23546858069",
-      "question": "Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
+      "user_input": "{\"pan\": \"USER_EXIT\"}",
+      "question": "Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
       "failure_count": 3,
       "conversation_history": [
-        "System: What is the purpose of your loan?",
-        "User: Car Loan",
-        "System: How much loan amount do you need?",
-        "User: 2354678769",
-        "System: Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
-        "User: 2368596843",
-        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
-        "User: 23546858069"
+        "System: Please provide your PAN or Aadhaar number.",
+        "User: {\"pan\": \"USER_EXIT\"}",
+        "System: Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
+        "User: {\"pan\": \"USER_EXIT\"}",
+        "System: Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
+        "User: {\"pan\": \"USER_EXIT\"}",
+        "System: Please provide your PAN or Aadhaar number.",
+        "User: {\"pan\": \"USER_EXIT\"}",
+        "System: Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
+        "User: {\"pan\": \"USER_EXIT\"}",
+        "System: Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
+        "User: {\"pan\": \"USER_EXIT\"}",
+        "System: Please provide your PAN or Aadhaar number.",
+        "User: {\"pan\": \"USER_EXIT\"}",
+        "System: Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
+        "User: {\"pan\": \"USER_EXIT\"}",
+        "System: Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits). Please provide your PAN or Aadhaar number.",
+        "User: {\"pan\": \"USER_EXIT\"}"
       ],
-      "error_message": "Loan amount too large. Maximum is \u20b91,00,00,000.",
+      "error_message": "Please provide a valid PAN number (format: ABCDE1234F) or Aadhaar number (12 digits).",
       "escalated_from": "orchestrator"
     },
     "status": "resolved",
     "priority": "MEDIUM",
     "human_response": {
-      "response": "We are asking for a lower amount , please enter a valid amount.",
-      "timestamp": "Jul 17, 2025, 06:34 PM"
+      "response": "Please consent us to access your Aadhar related financial details , so that we can proceed forward with your loan application.",
+      "timestamp": "Jul 21, 2025, 11:39 AM"
     },
-    "resolved_at": "2025-07-17T18:34:20.152429"
-  },
-  "esc_1752760489_31": {
-    "escalation_id": "esc_1752760489_31",
-    "timestamp": "2025-07-17T19:24:49.531415",
-    "context": {
-      "agent_name": "UserInteractionAgent",
-      "user_input": "12356789098765432",
-      "question": "Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
-      "failure_count": 3,
-      "conversation_history": [
-        "System: How much loan amount do you need?",
-        "User: 960716235487",
-        "System: Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
-        "User: 216563686675",
-        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
-        "User: 12356789098765432"
-      ],
-      "error_message": "Loan amount too large. Maximum is \u20b91,00,00,000.",
-      "escalated_from": "orchestrator"
-    },
-    "status": "timeout",
-    "priority": "MEDIUM",
-    "timeout_at": "2025-07-17T19:29:50.063799"
-  },
-  "esc_1752761258_32": {
-    "escalation_id": "esc_1752761258_32",
-    "timestamp": "2025-07-17T19:37:38.064022",
-    "context": {
-      "agent_name": "UserInteractionAgent",
-      "user_input": "345678987659876",
-      "question": "Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
-      "failure_count": 3,
-      "conversation_history": [
-        "System: How much loan amount do you need?",
-        "User: 960716235487",
-        "System: Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
-        "User: 098765434567890",
-        "System: Loan amount too large. Maximum is \u20b91,00,00,000. Loan amount too large. Maximum is \u20b91,00,00,000. How much loan amount do you need?",
-        "User: 345678987659876"
-      ],
-      "error_message": "Loan amount too large. Maximum is \u20b91,00,00,000.",
-      "escalated_from": "orchestrator"
-    },
-    "status": "resolved",
-    "priority": "MEDIUM",
-    "human_response": {
-      "response": "Please enter a valid amount , under the bank policies.",
-      "timestamp": "Jul 17, 2025, 07:38 PM"
-    },
-    "resolved_at": "2025-07-17T19:38:55.778653"
-  },
-  "esc_1752813508_33": {
-    "escalation_id": "esc_1752813508_33",
-    "timestamp": "2025-07-18T10:08:28.716725",
-    "context": {
-      "agent_name": "UserInteractionAgent",
-      "user_input": "1",
-      "question": "Loan amount too small. Minimum is \u20b91,000. Loan amount too small. Minimum is \u20b91,000. How much loan amount do you need?",
-      "failure_count": 3,
-      "conversation_history": [
-        "System: How much loan amount do you need?",
-        "User: 1",
-        "System: Loan amount too small. Minimum is \u20b91,000. How much loan amount do you need?",
-        "User: 1",
-        "System: Loan amount too small. Minimum is \u20b91,000. Loan amount too small. Minimum is \u20b91,000. How much loan amount do you need?",
-        "User: 1"
-      ],
-      "error_message": "Loan amount too small. Minimum is \u20b91,000.",
-      "escalated_from": "orchestrator"
-    },
-    "status": "resolved",
-    "priority": "MEDIUM",
-    "human_response": {
-      "response": "Please enter the number more than 1000/- as per our olicies",
-      "timestamp": "Jul 18, 2025, 10:09 AM"
-    },
-    "resolved_at": "2025-07-18T10:09:26.310641"
+    "resolved_at": "2025-07-21T11:39:47.372244"
   }
 }

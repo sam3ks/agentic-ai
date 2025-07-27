@@ -1,6 +1,7 @@
 #user_interaction.py
 import os
 import re
+import json
 from agentic_ai.core.agent.base_agent import BaseAgent
 from agentic_ai.core.config.constants import AVAILABLE_CITIES
 from agentic_ai.core.utils.fuzzy_matcher import CityMatcher
@@ -17,35 +18,34 @@ class UserInteractionAgent(BaseAgent):
         # Initialize the city matcher for fuzzy city name matching
         self.city_matcher = CityMatcher(AVAILABLE_CITIES)
         # Define restricted loan purposes that should be rejected
-
+ 
         self._restricted_purposes = [
             # Gambling related
             "gambling", "casino", "betting", "lottery", "poker", "sports betting", "wagering", "bingo", "slot machine", "bookmaker",
-
+ 
             # Illegal substances
             "drugs", "narcotics", "illegal substances", "controlled substances", "cocaine", "heroin", "meth", "lsd", "ecstasy",
-
+ 
             # Weapons
             "weapons", "firearms", "ammunition", "guns", "explosives", "bomb", "grenade", "knives", "assault rifle", "chemical weapon",
-
+ 
             # Financial risks - speculative or unregulated activities
             "cryptocurrency", "crypto", "nft", "token", "ico", "defi", "forex trading", "binary options", "unregulated investment",
-
+ 
             # Illegal activities
             "money laundering", "terrorist", "terrorism", "fraud", "scam", "pyramid scheme", "ponzi", "identity theft",
             "phishing", "smuggling", "black market", "counterfeit", "forgery", "bootlegging", "hacking", "cyber attack",
             "ransomware", "ddos", "malware", "spyware", "botnet", "data breach",
-
+ 
             # Other restricted
             "bribery", "illegal immigration", "extortion", "ransom", "human trafficking", "child exploitation",
             "hate speech", "incitement to violence",
-
+ 
             # High-risk industries or content
             "escort service", "adult entertainment", "cam site", "sex trafficking", "dark web", "deep web",
             "unlicensed pharmaceuticals", "unregulated medicine", "anabolic steroids", "counterfeit goods"
         ]
-
-       
+ 
         # Define explicitly allowed personal purposes for reference
         self._personal_purpose_examples = [
             "personal expenses", "personal needs", "personal loan", "personal use",
@@ -55,7 +55,7 @@ class UserInteractionAgent(BaseAgent):
         # Define termination keywords for exiting the interaction
         self._termination_keywords = {"stop", "quit", "terminate", "exit", "close", "end","cancel", "abort", "halt", "finish", "done", "enough", "bye",
     "goodbye", "disconnect", "logout","log out", "logoff", "conclude", "cease", "suspend", "break", "leave", "no more", "not interested", "not now", "not today", "stop this process"}
- 
+
     def reset_state(self):
         """Resets the state of the agent and identity/consent flow."""
         self._asked_purpose = False
@@ -69,25 +69,293 @@ class UserInteractionAgent(BaseAgent):
         self._asked_pdf_path = False
         self.initial_details = {}
 
+    def _map_purpose_to_standard_category(self, user_purpose: str) -> str:
+        """
+        Maps user input to standardized loan purpose categories from policy file.
+        
+        Args:
+            user_purpose: The user's raw input for loan purpose
+            
+        Returns:
+            str: The mapped standard category from loan_purpose_policy.json
+        """
+        # Common mappings for user inputs to standard categories
+        purpose_mappings = {
+            # Vehicle-related
+            "bike loan": "vehicle purchase",
+            "car loan": "vehicle purchase", 
+            "vehicle loan": "vehicle purchase",
+            "two wheeler": "vehicle purchase",
+            "automobile": "vehicle purchase",
+            "scooter": "vehicle purchase",
+            "motorcycle": "vehicle purchase",
+            
+            # Home-related
+            "house loan": "home purchase",
+            "home loan": "home purchase",
+            "property": "home purchase",
+            "real estate": "home purchase",
+            
+            # Education-related
+            "study": "education",
+            "college": "education",
+            "course": "education",
+            "training": "education",
+            
+            # Medical-related
+            "medical": "medical emergency",
+            "health": "medical emergency",
+            "hospital": "medical emergency",
+            "treatment": "medical emergency",
+            
+            # Business-related
+            "business": "business expansion",
+            "startup": "business expansion",
+            "shop": "business expansion",
+            
+            # Personal-related
+            "wedding": "marriage",
+            "vacation": "travel",
+            "holiday": "travel"
+        }
+        
+        # Convert to lowercase for case-insensitive matching
+        user_input_lower = user_purpose.lower().strip()
+        
+        # Check for direct mapping
+        if user_input_lower in purpose_mappings:
+            mapped_category = purpose_mappings[user_input_lower]
+            print(f"[DEBUG] Mapped '{user_purpose}' to standard category: '{mapped_category}'")
+            return mapped_category
+        
+        # If no mapping found, return original input
+        print(f"[DEBUG] No mapping found for '{user_purpose}', using as-is")
+        return user_purpose
+
+    def _get_loan_purpose(self, query: str) -> str:
+        """Gets and validates the loan purpose from the user."""
+        YELLOW = '\033[93m' if not self.is_ui_mode else ''
+        RED = '\033[91m' if not self.is_ui_mode else ''
+        RESET = '\033[0m' if not self.is_ui_mode else ''
+ 
+        def validate_purpose(user_input):
+            if not user_input or user_input.lower() in ["need", "want", "anything"]:
+                return False, "Please provide a clear loan purpose like 'home renovation', 'medical', etc."
+            is_valid, message = self.validate_loan_purpose(user_input)
+            if not is_valid:
+                return False, message
+            return True, user_input
+ 
+        success, value, message = self._validate_input_with_retry(
+            f"{YELLOW}🤔 {query} (You can leave this process anytime if you wish){RESET}",
+            validate_purpose,
+            f"{RED}⚠️ Invalid loan purpose.{RESET}"
+        )
+ 
+        if not success:
+            return "USER_EXIT" if value == "USER_EXIT" else f"ERROR: {message}"
+        else:
+            self._asked_purpose = True
+            return value
+ 
+    def _get_loan_amount(self, query: str) -> str:
+        """Gets and validates the loan amount from the user."""
+        YELLOW = '\033[93m' if not self.is_ui_mode else ''
+        RED = '\033[91m' if not self.is_ui_mode else ''
+        RESET = '\033[0m' if not self.is_ui_mode else ''
+ 
+        def validate_amount(user_input):
+            if not user_input:
+                return False, "Loan amount is required."
+            if not re.search(r'\d+', user_input):
+                return False, "Please enter a number."
+            return True, user_input
+       
+        success, value, message = self._validate_input_with_retry(
+            f"{YELLOW}🤔 {query} (Please enter a numeric value, or type 'stop' to exit){RESET}",
+            validate_amount,
+            f"{RED}⚠️ Invalid loan amount.{RESET}"
+        )
+       
+        if not success:
+            return "USER_EXIT" if value == "USER_EXIT" else f"ERROR: {message}"
+        else:
+            self._asked_amount = True
+            return value
+ 
+    def _get_city(self, query: str) -> str:
+        """Gets and validates the city from the user."""
+        YELLOW = '\033[93m' if not self.is_ui_mode else ''
+        GREEN = '\033[92m' if not self.is_ui_mode else ''
+        RED = '\033[91m' if not self.is_ui_mode else ''
+        RESET = '\033[0m' if not self.is_ui_mode else ''
+        city_list_str = ", ".join(AVAILABLE_CITIES)
+ 
+        def validate_city(user_input):
+            if not user_input:
+                return False, "City is required."
+            matched_city, score = self.city_matcher.get_closest_match(user_input)
+            if matched_city:
+                if score == 100:
+                    print(f"{GREEN}✓ Recognized city: {matched_city}{RESET}")
+                else:
+                    print(f"{GREEN}✓ Recognized '{user_input}' as '{matched_city}' (match score: {score}%){RESET}")
+                return True, matched_city
+            else:
+                return False, f"Invalid city. Please select from: {city_list_str}"
+       
+        success, value, message = self._validate_input_with_retry(
+            f"{YELLOW}🤔 {query} (Available options: {city_list_str}){RESET}",
+            validate_city,
+            f"{RED}⚠️ Invalid city selection.{RESET}"
+        )
+       
+        if not success:
+            return "USER_EXIT" if value == "USER_EXIT" else f"ERROR: {message}"
+        else:
+            self._asked_city = True
+            return value
+ 
+    def _get_identity_info(self, query: str) -> str:
+        """
+        Handles the full Aadhaar/PAN and consent flow in a self-contained, sequential manner.
+        This replaces the complex logic in handle_user_input for the identity flow.
+        """
+        YELLOW = '\033[93m' if not self.is_ui_mode else ''
+        GREEN = '\033[92m' if not self.is_ui_mode else ''
+        RED = '\033[91m' if not self.is_ui_mode else ''
+        RESET = '\033[0m' if not self.is_ui_mode else ''
+        from agentic_ai.core.utils.validators import is_pan, is_aadhaar
+ 
+        # --- Step 1: Collect Aadhaar ---
+        if not self._aadhaar_collected:
+            def validate_aadhaar(user_input):
+                if is_aadhaar(user_input): return True, user_input
+                return False, "Invalid Aadhaar. Please enter a 12-digit number."
+ 
+            success, value, msg = self._validate_input_with_retry(
+                f"{YELLOW}🪪 Please enter your Aadhaar number:{RESET}", validate_aadhaar, f"{RED}❌ Invalid Aadhaar number.{RESET}"
+            )
+            if not success: return "USER_EXIT"
+            self._aadhaar_number = value
+            self._aadhaar_collected = True
+
+        # --- Step 2: Get Aadhaar Consent ---
+        if not self._aadhaar_consent:
+            def validate_consent(ui):
+                if ui.lower() in ["yes", "y"]: return True, True
+                if ui.lower() in ["no", "n"]: return True, False
+                return False, "Please answer 'yes' or 'no'."
+           
+            success, value, msg = self._validate_input_with_retry(
+                f"{YELLOW}🔒 Do you consent to us accessing your Aadhaar-linked information? (yes/no){RESET}", validate_consent, f"{YELLOW}Please answer 'yes' or 'no'.{RESET}"
+            )
+            if not success: return "USER_EXIT"
+            if not value:
+                print(f"{RED}Consent not given. The process will be terminated.{RESET}")
+                return "USER_EXIT"
+            self._aadhaar_consent = True
+            print(f"{GREEN}✅ Consent received for Aadhaar processing.{RESET}")
+ 
+        # --- Step 3: Collect PAN ---
+        if not self._pan_collected:
+            def validate_pan(user_input):
+                if is_pan(user_input): return True, user_input
+                return False, "Invalid PAN. Please enter in format ABCDE1234F."
+ 
+            success, value, msg = self._validate_input_with_retry(
+                f"{YELLOW}📝 Please enter your PAN number:{RESET}", validate_pan, f"{RED}❌ Invalid PAN number.{RESET}"
+            )
+            if not success: return "USER_EXIT"
+            self._pan_number = value
+            self._pan_collected = True
+ 
+        # --- Step 4: Get PAN Consent ---
+        if not self._pan_consent:
+            def validate_consent(ui):
+                if ui.lower() in ["yes", "y"]: return True, True
+                if ui.lower() in ["no", "n"]: return True, False
+                return False, "Please answer 'yes' or 'no'."
+ 
+            success, value, msg = self._validate_input_with_retry(
+                f"{YELLOW}🔒 Do you consent to us accessing your PAN-linked data? (yes/no){RESET}", validate_consent, f"{YELLOW}Please answer 'yes' or 'no'.{RESET}"
+            )
+            if not success: return "USER_EXIT"
+            if not value:
+                print(f"{RED}Consent not given. The process will be terminated.{RESET}")
+                return "USER_EXIT"
+            self._pan_consent = True
+            print(f"{GREEN}✅ Consent received for PAN processing.{RESET}")
+ 
+        # --- Final Step: Return the collected PAN ---
+        return self._pan_number
+ 
+    def _confirm_salary_update(self, query: str) -> str:
+        """Asks the user to confirm if they want to update their salary."""
+        self._asked_salary_update = True
+       
+        # Ensure the query asks the right question for existing users
+        if "update" not in query.lower() or "salary" not in query.lower():
+            query = "Do you want to update your salary information? (yes/no)"
+       
+        def validate_yes_no(response):
+            """Validate yes/no response"""
+            response_lower = response.lower().strip()
+            if response_lower in ['yes', 'y', 'sure', 'ok', 'okay', 'please', 'yeah', 'yep']:
+                return True, 'yes'
+            elif response_lower in ['no', 'n', 'nope', 'nah', 'skip', 'continue']:
+                return True, 'no'
+            else:
+                return False, response
+       
+        if self.is_ui_mode:
+            # In UI mode, just get the response and validate
+            response = self.get_user_input(query)
+            is_valid, processed_value = validate_yes_no(response)
+            if not is_valid:
+                return f"Please respond with 'yes' or 'no'. Your response: {response}"
+            return processed_value
+        else:
+            # In CLI mode, loop until valid response
+            while True:
+                response = self.get_user_input(query)
+                if self._is_termination_request(response):
+                    return "USER_EXIT"
+                is_valid, processed_value = validate_yes_no(response)
+                if is_valid:
+                    return processed_value
+                else:
+                    print("⚠️ Please respond with 'yes' or 'no'.")
+                    continue
+ 
+    def _get_pdf_path(self, query: str) -> str:
+        """Gets and validates a PDF/TXT file path from the user."""
+        self._asked_pdf_path = True
+        return self.handle_user_input(query)
+    
+    def _get_agreement_acceptance(self, query: str) -> str:
+        """Asks the user to accept or decline the loan agreement."""
+        return self.handle_user_input(query)
+ 
     def get_user_input(self, prompt: str) -> str:
         """
         Get user input using the configured input provider.
         In UI mode, this returns the input directly without looping.
         """
         return self.input_provider(prompt)
-
+ 
     def _validate_input_with_retry(self, prompt: str, validation_func, error_message: str, max_retries: int = 3):
         """
         Helper method for input validation that respects UI mode.
         In CLI mode: loops until valid input or termination request
         In UI mode: validates once and returns result with error message if invalid
-        
+       
         Args:
             prompt: The prompt to show to user
             validation_func: Function that takes user input and returns (is_valid, processed_value)
             error_message: Message to show on validation failure
             max_retries: Maximum retries in UI mode (to prevent infinite loops)
-        
+       
         Returns:
             tuple: (success, value, message) where success is bool, value is the processed input, message is any error/info
         """
@@ -287,38 +555,6 @@ REASON: [Brief explanation of your decision]
            
         return True, "Purpose accepted"
  
-    def set_initial_details(self, details: dict):
-        """Sets the initial details extracted from the user's first message."""
-        self.initial_details = details
-       
-        print(f"[DEBUG] Initial details received: {details}")
-       
-        # If a loan purpose was extracted, mark it as already asked but DON'T validate
-        # This allows the purpose to be passed directly to LoanPurposeAssessmentAgent
-        if details.get("purpose") and details["purpose"] not in ["unknown", "need", "want", "not_detected"]:
-            print(f"[DEBUG] Initial purpose detected: '{details['purpose']}' - will be evaluated by LoanPurposeAssessmentAgent")
-            self._asked_purpose = True
-        else:
-            print(f"[DEBUG] No valid initial purpose found, got: '{details.get('purpose', 'None')}' - will need to ask user")
-        if details.get("amount") and details["amount"] > 0:
-            # Import formatting utility
-            from agentic_ai.core.utils.formatting import format_indian_currency_without_decimal
-            print(f"[DEBUG] Initial amount is valid: {format_indian_currency_without_decimal(details['amount'])}")
-            self._asked_amount = True
-       
-        if details.get("city") and details["city"] != "unknown":
-            # Try to match the provided city using fuzzy matching
-            matched_city, score = self.city_matcher.get_closest_match(details["city"])
-            if matched_city:
-                if matched_city != details["city"]:
-                    print(f"[DEBUG] Normalized city from '{details['city']}' to '{matched_city}' (score: {score}%)")
-                    self.initial_details["city"] = matched_city
-                print(f"[DEBUG] Initial city is valid: {matched_city}")
-                self._asked_city = True
-            else:
-                print(f"[DEBUG] Initial city '{details['city']}' could not be matched to a supported city")
-                self.initial_details["city"] = "unknown"
- 
     def get_user_input(self, prompt):
         return self.input_provider(prompt)
  
@@ -356,13 +592,13 @@ REASON: [Brief explanation of your decision]
                         return False, "PAN number cannot be accepted as the first input. Please start with your Aadhaar number."
                     else:
                         return False, "Invalid Aadhaar number. Please enter a valid 12-digit Aadhaar number."
-                
+               
                 success, value, message = self._validate_input_with_retry(
                     f"{YELLOW}🪪 Please enter your Aadhaar number:{RESET}",
                     validate_aadhaar,
                     f"{RED}❌ Invalid input. Please check and try again.{RESET}"
                 )
-                
+               
                 if not success:
                     if value == "USER_EXIT":
                         print(f"{RED}You have chosen to exit. Exiting the process.{RESET}")
@@ -383,13 +619,13 @@ REASON: [Brief explanation of your decision]
                         return True, False
                     else:
                         return False, "Please answer 'yes' or 'no'."
-                
+               
                 success, value, message = self._validate_input_with_retry(
                     f"{YELLOW}🔒 Do you consent to us accessing and processing your Aadhaar-linked information? (yes/no){RESET}",
                     validate_consent,
                     f"{YELLOW}Please answer 'yes' or 'no'.{RESET}"
                 )
-                
+               
                 if not success:
                     if value == "USER_EXIT":
                         print(f"{RED}You have chosen to exit. Exiting the process.{RESET}")
@@ -424,13 +660,13 @@ REASON: [Brief explanation of your decision]
                         return False, "Aadhaar number already provided. Please enter your PAN number now."
                     else:
                         return False, "Invalid PAN number. Please enter a valid PAN (e.g., ABCDE1234F)."
-                
+               
                 success, value, message = self._validate_input_with_retry(
                     f"{YELLOW}📝 Please enter your PAN number:{RESET}",
                     validate_pan,
                     f"{RED}❌ Invalid input. Please check and try again.{RESET}"
                 )
-                
+               
                 if not success:
                     if value == "USER_EXIT":
                         print(f"{RED}You have chosen to exit. Exiting the process.{RESET}")
@@ -453,13 +689,13 @@ REASON: [Brief explanation of your decision]
                         return True, False
                     else:
                         return False, "Please answer 'yes' or 'no'."
-                
+               
                 success, value, message = self._validate_input_with_retry(
                     f"{YELLOW}🔒 Do you consent to us accessing and processing your PAN-linked data (financial details, credit score, etc.)? (yes/no){RESET}",
                     validate_pan_consent,
                     f"{YELLOW}Please answer 'yes' or 'no'.{RESET}"
                 )
-                
+               
                 if not success:
                     if value == "USER_EXIT":
                         print(f"{RED}You have chosen to exit. Exiting the process.{RESET}")
@@ -470,9 +706,19 @@ REASON: [Brief explanation of your decision]
                     if value:
                         print(f"{GREEN}✅ Consent received for PAN processing.{RESET}")
                         self._pan_consent = True
+                        # CRITICAL FIX: After final consent, immediately return the collected PAN
+                        if hasattr(self, '_pan_number') and self._pan_number:
+                            return self._pan_number
                     else:
                         print(f"{RED}Consent not given. The process will be terminated.{RESET}")
                         return "USER_EXIT"
+ 
+            # This check is now redundant if the return above works correctly, but serves as a fallback.
+            if (is_asking_for_aadhaar or is_asking_for_pan or is_asking_for_both) and (self._aadhaar_collected and self._aadhaar_consent and self._pan_collected and self._pan_consent):
+                if hasattr(self, '_pan_number') and self._pan_number:
+                    return self._pan_number
+                elif hasattr(self, '_aadhaar_number') and self._aadhaar_number:
+                    return self._aadhaar_number
  
             if (is_asking_for_aadhaar or is_asking_for_pan or is_asking_for_both) and not (self._aadhaar_collected and self._aadhaar_consent and self._pan_collected and self._pan_consent):
                 print(f"{RED}Identity verification and consent sequence not completed. Cannot proceed.{RESET}")
@@ -494,14 +740,24 @@ REASON: [Brief explanation of your decision]
                 elif hasattr(self, '_aadhaar_number') and self._aadhaar_number:
                     return self._aadhaar_number
                 else:
-                    return ""
+                    return ""            # For LangGraph workflow compatibility: In CLI mode, always ask the user even if we have initial details
+            # This ensures the proper workflow continues rather than stopping early
+            if is_required_loan_purpose:
+                if self.initial_details.get("purpose") and self.initial_details["purpose"] not in ["unknown", "need", "want", "not_detected"]:
+                    # We have the purpose from initial parsing, but still mark as asked and return it
+                    self._asked_purpose = True
+                    return f"Based on your initial request, the loan purpose is '{self.initial_details['purpose']}'."
+                else:
+                    # Normal validation flow for purpose
+                    pass  # Continue to normal validation below
  
-            if is_required_loan_purpose and self.initial_details.get("purpose") and self.initial_details["purpose"] not in ["unknown", "need", "want", "not_detected"]:
-                self._asked_purpose = True
-                return f"Based on the initial request, the loan purpose is '{self.initial_details['purpose']}'."
- 
-            if is_required_loan_amount and self.initial_details.get("amount") and self.initial_details["amount"] > 0:
-                return f"Based on the initial request, the loan amount is '{format_indian_commas(self.initial_details['amount'])}'."
+            if is_required_loan_amount:
+                if self.initial_details.get("amount") and self.initial_details["amount"] > 0:
+                    self._asked_amount = True
+                    return f"Based on your initial request, the loan amount is '{format_indian_commas(self.initial_details['amount'])}'."
+                else:
+                    # Normal validation flow for amount  
+                    pass  # Continue to normal validation below
  
             if is_required_city and self.initial_details.get("city") and self.initial_details["city"] != "unknown":
                 matched_city, score = self.city_matcher.get_closest_match(self.initial_details["city"])
@@ -528,7 +784,7 @@ REASON: [Brief explanation of your decision]
             # Ask city with fuzzy validation
             if is_required_city:
                 city_list_str = ", ".join(AVAILABLE_CITIES)
-                
+               
                 def validate_city(user_input):
                     if not user_input:
                         return False, "City is required."
@@ -543,13 +799,13 @@ REASON: [Brief explanation of your decision]
                         return False, f"Did you mean one of our supported cities? Your entry '{user_input}' was not recognized. Available options: {city_list_str}"
                     else:
                         return False, f"Invalid city. Please select from: {city_list_str}"
-                
+               
                 success, value, message = self._validate_input_with_retry(
                     f"{YELLOW}🤔 {question} (Available options: {city_list_str}){RESET}",
                     validate_city,
                     f"{RED}⚠️ Invalid city selection.{RESET}"
                 )
-                
+               
                 if not success:
                     if value == "USER_EXIT":
                         print(f"{RED}You have chosen to exit. Exiting the process.{RESET}")
@@ -566,13 +822,13 @@ REASON: [Brief explanation of your decision]
                     if any(term in user_input.lower() for term in ["illegal", "drugs", "weapons", "terrorism"]):
                         return False, "Please provide a legal and acceptable loan purpose."
                     return True, user_input
-                
+               
                 success, value, message = self._validate_input_with_retry(
                     f"{YELLOW}🤔 {question} (You can leave this process anytime if you wish){RESET}",
                     validate_purpose,
                     f"{RED}⚠️ Invalid loan purpose.{RESET}"
                 )
-                
+               
                 if not success:
                     if value == "USER_EXIT":
                         print(f"{RED}You have chosen to exit. Exiting the process.{RESET}")
@@ -589,13 +845,13 @@ REASON: [Brief explanation of your decision]
                     if not re.search(r'\d+', user_input):
                         return False, "Please enter a number."
                     return True, user_input
-                
+               
                 success, value, message = self._validate_input_with_retry(
                     f"{YELLOW}🤔 {question} (Please enter a numeric value, or type 'stop' to exit){RESET}",
                     validate_amount,
                     f"{RED}⚠️ Invalid loan amount.{RESET}"
                 )
-                
+               
                 if not success:
                     if value == "USER_EXIT":
                         print(f"{RED}You have chosen to exit. Exiting the process.{RESET}")
@@ -617,13 +873,13 @@ REASON: [Brief explanation of your decision]
                         return True, user_input
                     else:
                         return False, "Please provide a valid .pdf or .txt file path."
-                
+               
                 success, value, message = self._validate_input_with_retry(
                     f"{YELLOW}🤔 {question}{RESET}",
                     validate_pdf_path,
                     f"{RED}⚠️ Please provide a valid PDF or text file path.{RESET}"
                 )
-                
+               
                 if not success:
                     if value == "USER_EXIT":
                         print(f"{RED}You have chosen to exit. Exiting the process.{RESET}")
@@ -640,13 +896,82 @@ REASON: [Brief explanation of your decision]
             print(f"[ERROR] UserInteractionAgent failed: {str(e)}")
             return f"An error occurred: {str(e)}"
  
-    def run(self, question: str) -> str:
-        response = self.handle_user_input(question)
-        if response == "USER_EXIT":
-            print("User exited the process.")
-            # Stop the agent chain or return a special result
-            return "USER_EXIT"
-        return response
+    def run(self, query: str) -> str:
+        """
+        Handles user interaction based on the query.
+        This is the main entry point for the UserInteraction tool.
+        # Returns a JSON string indicating the type of information collected.
+        """
+        query = query.lower().strip()
+        print(f"[DEBUG] UserInteractionAgent received query: '{query}'")
  
-    def _format_currency(self, amount):
-        return format_indian_commas(amount)
+        # Check for termination keywords first
+        if any(keyword in query for keyword in self._termination_keywords):
+            return json.dumps({"status": "terminated", "message": "User has terminated the conversation."})
+ 
+        # Determine what information is being requested
+        # PRIORITY 1: Identity flow returns a JSON object with both "pan" and "aadhaar" keys
+        if "pan" in query or "aadhaar" in query:
+            identity = self._get_identity_info(query)
+            # Return both PAN and Aadhaar for security validation
+            result = {"pan": identity}
+            if hasattr(self, '_aadhaar_number') and self._aadhaar_number:
+                result["aadhaar"] = self._aadhaar_number
+            return json.dumps(result)
+           
+        # Other flows return a JSON string
+        elif "purpose" in query:
+            purpose = self._get_loan_purpose(query)
+            return json.dumps({"purpose": purpose})
+        elif "amount" in query:
+            amount = self._get_loan_amount(query)
+            return json.dumps({"amount": amount})
+        elif "city" in query:
+            city = self._get_city(query)
+            return json.dumps({"city": city})
+        elif "salary" in query and "update" in query:
+            response = self._confirm_salary_update(query)
+            return json.dumps({"salary_update_confirmation": response})
+        elif "path" in query or "document" in query or "pdf" in query:
+            path = self._get_pdf_path(query)
+            return json.dumps({"document_path": path})
+        elif "accept" in query or "decline" in query or "agreement" in query:
+            acceptance = self._get_agreement_acceptance(query)
+            return json.dumps({"agreement_response": acceptance})
+        else:
+            # Fallback for general queries
+            user_response = self.get_user_input(query)
+            return json.dumps({"response": user_response})
+ 
+    def set_initial_details(self, details: dict):
+        """Sets initial loan details parsed from the first user request."""
+        self.initial_details = details
+       
+        print(f"[DEBUG] Initial details received: {details}")
+       
+        # If a loan purpose was extracted, mark it as already asked but DON'T validate
+        # This allows the purpose to be passed directly to LoanPurposeAssessmentAgent
+        if details.get("purpose") and details["purpose"] not in ["unknown", "need", "want", "not_detected"]:
+            print(f"[DEBUG] Initial purpose detected: '{details['purpose']}' - will be evaluated by LoanPurposeAssessmentAgent")
+            self._asked_purpose = True
+        else:
+            print(f"[DEBUG] No valid initial purpose found, got: '{details.get('purpose', 'None')}' - will need to ask user")
+        if details.get("amount") and details["amount"] > 0:
+            # Import formatting utility
+            from agentic_ai.core.utils.formatting import format_indian_currency_without_decimal
+            print(f"[DEBUG] Initial amount is valid: {format_indian_currency_without_decimal(details['amount'])}")
+            self._asked_amount = True
+       
+        if details.get("city") and details["city"] != "unknown":
+            # Try to match the provided city using fuzzy matching
+            matched_city, score = self.city_matcher.get_closest_match(details["city"])
+            if matched_city:
+                if matched_city != details["city"]:
+                    print(f"[DEBUG] Normalized city from '{details['city']}' to '{matched_city}' (score: {score}%)")
+                    self.initial_details["city"] = matched_city
+                print(f"[DEBUG] Initial city is valid: {matched_city}")
+                self._asked_city = True
+            else:
+                print(f"[DEBUG] Initial city '{details['city']}' could not be matched to a supported city")
+                self.initial_details["city"] = "unknown"
+ 
