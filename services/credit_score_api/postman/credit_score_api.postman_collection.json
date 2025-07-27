@@ -1,28 +1,59 @@
 {
   "info": {
     "name": "Credit Score API",
+    "description": "API to fetch and update credit score based on PAN number. Implemented using FastAPI and SQLite.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Get Credit Score",
+      "name": "➕ Add or Update Credit Score",
       "request": {
-        "method": "GET",
-        "header": [],
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pan_number\": \"NAMWT4886W\",\n  \"credit_score\": 760\n}"
+        },
         "url": {
-          "raw": "http://localhost:5001/credit-score?customer_id=123",
+          "raw": "http://localhost:5001/add_credit_score",
           "protocol": "http",
           "host": ["localhost"],
           "port": "5001",
-          "path": ["credit-score"],
-          "query": [
-            {
-              "key": "customer_id",
-              "value": "123"
-            }
-          ]
+          "path": ["add_credit_score"]
         }
-      }
+      },
+      "response": [],
+      "description": "**Adds or updates** a credit score record in the database.\n\n- If the PAN already exists, the credit score will be updated.\n- If not, a new record will be inserted.\n\n**Request JSON:**\n```json\n{\n  \"pan_number\": \"ABCDE1234F\",\n  \"credit_score\": 760\n}\n```\n\n**Response:**\n```json\n{\n  \"status\": \"success\"\n}\n```"
+    },
+    {
+      "name": "🔍 Get Credit Score",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pan_number\": \"ABCDE1234F\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5001/get_credit_score",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5001",
+          "path": ["get_credit_score"]
+        }
+      },
+      "response": [],
+      "description": "**Fetches** the credit score for a given PAN number.\n\n**Request JSON:**\n```json\n{\n  \"pan_number\": \"ABCDE1234F\"\n}\n```\n\n**Successful Response:**\n```json\n{\n  \"credit_score\": 760\n}\n```\n\n**Error Response (if PAN not found):**\n```json\n{\n  \"error\": \"PAN number not found\"\n}\n```"
     }
   ]
 }

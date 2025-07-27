@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   streamlit_ui:
     build:
@@ -18,24 +16,24 @@ services:
 
   aadhaar_api:
     build:
-      context: .
-      dockerfile: docker/aadhaar_api/Dockerfile
-    command: ["python", "scripts/aadhaar_details_api.py"]
+      context: ./services/aadhaar_api
+      dockerfile: Dockerfile
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5002"]
     ports:
       - "5002:5002"
     volumes:
-      - .:/app
+      - ./services/aadhaar_api:/app
     restart: unless-stopped
 
   credit_score_api:
     build:
-      context: .
-      dockerfile: docker/credit_score_api/Dockerfile
-    command: ["python", "scripts/credit_score_api.py"]
+      context: ./services/credit_score_api
+      dockerfile: Dockerfile
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5001"]
     ports:
       - "5001:5001"
     volumes:
-      - .:/app
+      - ./services/credit_score_api:/app
     restart: unless-stopped
 
   dashboard:

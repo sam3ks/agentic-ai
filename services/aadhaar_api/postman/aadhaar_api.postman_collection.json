@@ -1,28 +1,71 @@
 {
   "info": {
     "name": "Aadhaar API",
+    "_postman_id": "aadhaar-api-collection",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Verify Aadhaar",
+      "name": "Get Aadhaar Details",
       "request": {
-        "method": "GET",
-        "header": [],
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "name": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"aadhaar_number\": \"631999289535\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
         "url": {
-          "raw": "http://localhost:5002/aadhaar/verify?aadhaar_number=123456789012",
+          "raw": "http://localhost:5002/get_aadhaar_details",
           "protocol": "http",
           "host": ["localhost"],
           "port": "5002",
-          "path": ["aadhaar", "verify"],
-          "query": [
-            {
-              "key": "aadhaar_number",
-              "value": "123456789012"
-            }
-          ]
+          "path": ["get_aadhaar_details"]
         }
-      }
+      },
+      "response": []
+    },
+    {
+      "name": "Add Aadhaar Details",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "name": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"aadhaar_number\": \"123456789012\",\n  \"name\": \"John Doe\",\n  \"age\": 30,\n  \"gender\": \"Male\",\n  \"address\": \"Bangalore\",\n  \"dob\": \"1994-04-22\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:5002/add_aadhaar_details",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5002",
+          "path": ["add_aadhaar_details"]
+        }
+      },
+      "response": []
     }
   ]
 }

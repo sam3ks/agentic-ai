@@ -19,7 +19,7 @@ class DataQueryAgent(BaseAgent):
         """Fetch credit score from external API."""
         try:
             response = requests.post(
-                "http://localhost:5001/get_credit_score",
+                "http://credit_score_api:5001/get_credit_score",
                 json={"pan_number": pan_number},
                 timeout=5
             )
@@ -67,7 +67,7 @@ class DataQueryAgent(BaseAgent):
         """Fetch personal details from Aadhaar API."""
         try:
             response = requests.post(
-                "http://localhost:5002/get_aadhaar_details",
+                "http://aadhaar_api:5002/get_aadhaar_details",
                 json={"aadhaar_number": aadhaar_number},
                 timeout=5
             )

@@ -22,7 +22,7 @@ langsmith==0.1.147
  
 # Machine Learning and NLP
 sentence-transformers==5.0.0
-scikit-learn==1.7.0
+scikit-learn==1.4.2
 transformers==4.53.2
 torch==2.7.1
  
@@ -73,3 +73,5 @@ certifi==2025.7.14
 python-dateutil==2.9.0.post0
 PyYAML==6.0.2
 fastapi==0.116.1
+uvicorn==0.30.1
+pydantic==2.11.7

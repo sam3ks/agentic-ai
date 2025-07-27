@@ -1,10 +1,15 @@
 from fastapi import FastAPI
-from app.routes import router
+from app.routes import router, initialize_database
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Credit Score API")
 
-app.include_router(router)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
-@app.get("/health")
-def health():
-    return {"status": "ok"}
+app.include_router(router)
+initialize_database()
