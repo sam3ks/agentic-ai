@@ -109,6 +109,95 @@ You can interrupt a loan session at any time and resume it later using the CLI. 
 
 ---
 
+
+---
+
+## 🐳 Dockerized Microservices Setup
+
+This project includes containerized FastAPI microservices for:
+- **Aadhaar Verification API**
+- **Credit Score API**
+- **Streamlit Loan UI**
+- **Human Operator Dashboard**
+
+### 📦 Prerequisites
+
+Install Docker and Docker Compose:
+
+```bash
+sudo apt update
+sudo apt install docker.io docker-compose -y
+```
+
+---
+
+### 📁 Docker Structure
+
+```
+services/
+├── aadhaar_api/           # Aadhaar FastAPI service
+├── credit_score_api/      # Credit Score FastAPI service
+docker-compose.yml         # Compose file to run everything together
+```
+
+Each microservice contains:
+- `main.py`: FastAPI app entrypoint
+- `app/`: route handlers and logic
+- `requirements.txt`: service dependencies
+- `Dockerfile`: Docker image setup
+
+---
+
+### ▶️ Build and Run the Project
+
+From the project root directory:
+
+```bash
+# Build all containers
+docker compose build --no-cache
+
+# Start all services in background
+docker compose up -d
+```
+
+Check running containers:
+
+```bash
+docker ps
+```
+
+---
+
+### 🌐 Service URLs (Defaults)
+
+- Aadhaar API → http://localhost:5002/aadhaar/verify?aadhaar_number=123456789012  
+- Credit Score API → http://localhost:5001/credit-score?customer_id=123  
+- Streamlit Loan UI → http://localhost:8501  
+- Human Dashboard (CLI) → `python human_operator_dashboard.py`
+
+---
+
+### 📄 View Logs
+
+```bash
+docker compose logs -f aadhaar_api
+docker compose logs -f credit_score_api
+docker compose logs -f streamlit_ui
+```
+
+---
+
+### 🛑 Stop & Clean
+
+```bash
+# Stop services
+docker compose down
+
+# Optionally remove all containers
+docker rm -f $(docker ps -aq)
+```
+
+
 ---
 
 ## 📃 License
