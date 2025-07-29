@@ -1,32 +1,83 @@
-#dataquery
 import json
 import requests
+import os
+import jwt
+import time
 from agentic_ai.core.agent.base_agent import BaseAgent
 from agentic_ai.modules.loan_processing.services.loan_data_service import LoanDataService
 from agentic_ai.core.utils.formatting import format_indian_commas
- 
+
 class DataQueryAgent(BaseAgent):
     """Specialized agent for data querying."""
- 
+
     def __init__(self, data_service: LoanDataService):
         super().__init__()
         self.data_service = data_service
- 
+
     def _format_currency(self, amount):
         return format_indian_commas(amount)
-   
+
+    def _get_jwt_token(self):
+        """Generate a short-lived JWT token dynamically for Kong Gateway authentication."""
+        key = os.getenv("KONG_JWT_KEY")
+        secret = os.getenv("KONG_JWT_SECRET")
+
+        if not key or not secret:
+            raise ValueError("KONG_JWT_KEY and KONG_JWT_SECRET must be set in the environment.")
+
+        payload = {
+            "iss": key,                        # Issuer (consumer key)
+            "exp": int(time.time()) + 300,     # Expiration (5 minutes)
+            "sub": "agentic-ai-service"        # Optional subject identifier
+        }
+
+        return jwt.encode(payload, secret, algorithm="HS256")
+
+
+
+        # Option 2: If using pre-generated token stored in env
+        # return os.getenv("KONG_JWT_TOKEN")
+
     def fetch_credit_score_from_api(self, pan_number):
-        """Fetch credit score from external API."""
+        """Fetch credit score from secured API via Kong Gateway."""
         try:
+            headers = {
+                "Authorization": f"Bearer {self._get_jwt_token()}",
+                "Content-Type": "application/json"
+            }
             response = requests.post(
-                "http://credit_score_api:5001/get_credit_score",
+                "http://kong-gateway:8000/credit/get_credit_score",
                 json={"pan_number": pan_number},
+                headers=headers,
                 timeout=5
             )
             if response.status_code == 200:
                 return response.json().get("credit_score")
+            else:
+                print(f"[API ERROR] Credit score API returned {response.status_code}: {response.text}")
         except Exception as e:
             print(f"[API ERROR] Credit score API call failed: {e}")
+        return None
+
+    def fetch_aadhaar_details_from_api(self, aadhaar_number):
+        """Fetch personal details from secured Aadhaar API via Kong Gateway."""
+        try:
+            headers = {
+                "Authorization": f"Bearer {self._get_jwt_token()}",
+                "Content-Type": "application/json"
+            }
+            response = requests.post(
+                "http://kong-gateway:8000/aadhaar/get_aadhaar_details",
+                json={"aadhaar_number": aadhaar_number},
+                headers=headers,
+                timeout=5
+            )
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"[API ERROR] Aadhaar API returned {response.status_code}: {response.text}")
+        except Exception as e:
+            print(f"[API ERROR] Aadhaar details API call failed: {e}")
         return None
 
     def query_user_data_silent(self, query: str) -> dict:
@@ -37,7 +88,6 @@ class DataQueryAgent(BaseAgent):
             aadhaar = None
             pan = None
 
-            # Extract identifier
             if is_pan(clean_query):
                 pan = clean_query
             elif is_aadhaar(clean_query):
@@ -45,12 +95,10 @@ class DataQueryAgent(BaseAgent):
             else:
                 return {"error": "No valid PAN or Aadhaar found in the query."}
 
-            # For security validation, we only need the basic user data lookup
             if aadhaar:
                 user_data = self.data_service.get_user_data(aadhaar)
                 return user_data
             elif pan:
-                # Look up Aadhaar using PAN from CSV data
                 aadhaar = self.data_service.get_aadhaar_by_pan(pan)
                 if aadhaar:
                     user_data = self.data_service.get_user_data(aadhaar)
@@ -59,24 +107,10 @@ class DataQueryAgent(BaseAgent):
                     return {"error": f"No user found for PAN {pan}"}
             else:
                 return {"error": "No valid identifier provided"}
-                
+
         except Exception as e:
             return {"error": f"Security validation failed: {str(e)}"}
 
-    def fetch_aadhaar_details_from_api(self, aadhaar_number):
-        """Fetch personal details from Aadhaar API."""
-        try:
-            response = requests.post(
-                "http://aadhaar_api:5002/get_aadhaar_details",
-                json={"aadhaar_number": aadhaar_number},
-                timeout=5
-            )
-            if response.status_code == 200:
-                return response.json()
-        except Exception as e:
-            print(f"[API ERROR] Aadhaar details API call failed: {e}")
-        return None
- 
     def query_user_data(self, query: str) -> str:
         """Queries user data with Aadhaar for details and PAN for credit score only."""
         try:
@@ -85,10 +119,7 @@ class DataQueryAgent(BaseAgent):
             identifier = None
             aadhaar = None
             pan = None
- 
- 
- 
-            # Extract identifier
+
             if is_pan(clean_query):
                 pan = clean_query
             elif is_aadhaar(clean_query):
@@ -109,10 +140,8 @@ class DataQueryAgent(BaseAgent):
                     pan = identifier
                 elif is_aadhaar(identifier):
                     aadhaar = identifier
- 
-            # If only PAN is provided, look up Aadhaar using PAN
+
             if pan and not aadhaar:
-                # Find Aadhaar linked to this PAN
                 user_row = self.data_service.df[self.data_service.df['pan_number'] == pan]
                 if not user_row.empty:
                     aadhaar = user_row.iloc[0]['aadhaar_number']
@@ -125,14 +154,13 @@ class DataQueryAgent(BaseAgent):
                         "pan_provided": pan,
                         "instructions": "NEW USER: Ask for salary PDF upload directly. Do not ask about updating salary since they have no existing data."
                     })
- 
-            # If only Aadhaar is provided, use it
+
             if aadhaar:
                 user_data = self.data_service.get_user_data(aadhaar)
             else:
                 return json.dumps({"error": "No valid Aadhaar found for user data lookup."})
- 
-            # --- API call for credit score ---
+
+            # Fetch credit score securely
             api_credit_score = None
             if pan:
                 api_credit_score = self.fetch_credit_score_from_api(pan)
@@ -140,12 +168,10 @@ class DataQueryAgent(BaseAgent):
                 if api_credit_score is not None:
                     user_data['api_credit_score'] = api_credit_score
             else:
-                # Suppress the "No PAN provided" message during security validation
-                # We can detect this by checking if we're only querying with Aadhaar and no explicit PAN was expected
                 api_credit_score = 0
                 user_data['api_credit_score'] = api_credit_score
- 
-            # --- API call for Aadhaar personal details ---
+
+            # Fetch Aadhaar details securely
             api_personal_details = None
             if aadhaar:
                 api_personal_details = self.fetch_aadhaar_details_from_api(aadhaar)
@@ -154,13 +180,12 @@ class DataQueryAgent(BaseAgent):
                     user_data['api_personal_details'] = api_personal_details
                 else:
                     print(f"[INFO] No personal details found for Aadhaar {aadhaar}")
-            # --- end API calls ---
- 
+
             if "error" in user_data:
                 print(f"💭 Thought: No matching user found for Aadhaar {aadhaar}. This appears to be a new user.")
                 print("=" * 50 + "\n")
                 return json.dumps(user_data)
- 
+
             if user_data.get("status") == "existing_user_data_retrieved":
                 print(f"💭 Thought: Found existing user with Aadhaar {aadhaar}. Analyzing their financial profile...")
                 if 'city' in user_data:
@@ -170,16 +195,16 @@ class DataQueryAgent(BaseAgent):
                     credit_score = user_data.get('api_credit_score', 0)
                     existing_emi = user_data.get('existing_emi', 0)
                     personal_details = user_data.get('api_personal_details', {})
-                   
+
                     credit_rating = "Excellent" if credit_score >= 750 else "Good" if credit_score >= 700 else "Fair" if credit_score >= 650 else "Poor"
                     affordability = "High" if monthly_salary > 75000 else "Medium" if monthly_salary > 40000 else "Limited"
-                   
+
                     print(f"💭 Thought: User has monthly salary of {self._format_currency(monthly_salary)}, credit score of {credit_score} ({credit_rating}), and existing EMI of {self._format_currency(existing_emi)}.")
                     if personal_details:
                         print(f"💭 Thought: Personal details - Name: {personal_details.get('name', 'N/A')}, Age: {personal_details.get('age', 'N/A')}, Gender: {personal_details.get('gender', 'N/A')}, Address: {personal_details.get('address', 'N/A')}, DOB: {personal_details.get('dob', 'N/A')}.")
                     print(f"💭 Thought: Based on income and existing obligations, affordability level is {affordability}.")
                     print("=" * 50 + "\n")
-                   
+
                     analysis = {
                         "user_data": user_data,
                         "financial_assessment": {
@@ -201,8 +226,7 @@ class DataQueryAgent(BaseAgent):
                 return json.dumps(user_data, indent=2)
         except Exception as e:
             return json.dumps({"error": f"Data query error: {str(e)}"})
- 
+
     def run(self, query: str) -> str:
         """Runs the agent's specific task."""
         return self.query_user_data(query)
- 

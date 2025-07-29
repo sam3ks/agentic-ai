@@ -1,0 +1,99 @@
+{
+  "session_id": "loan_20250729_033926_1a2a8822",
+  "created_at": "2025-07-29T03:39:26.541171",
+  "status": "active",
+  "user_request": "need home loan",
+  "workflow_step": 2,
+  "collected_data": {
+    "initial_loan_details": {
+      "purpose": "home purchase",
+      "amount": 0.0,
+      "city": "unknown"
+    },
+    "amount": "20 lakh",
+    "pan": "NAMWT4886W",
+    "aadhaar": "631999289535",
+    "salary_update_confirmation": "no"
+  },
+  "conversation_history": [
+    {
+      "timestamp": "2025-07-29T03:39:32.797738",
+      "speaker": "User",
+      "message": "need home loan"
+    },
+    {
+      "timestamp": "2025-07-29T03:42:14.559192",
+      "speaker": "System",
+      "message": "Please provide the loan amount you are requesting."
+    },
+    {
+      "timestamp": "2025-07-29T03:42:14.872552",
+      "speaker": "User",
+      "message": "{\"amount\": \"20 lakh\"}"
+    },
+    {
+      "timestamp": "2025-07-29T03:42:39.601592",
+      "speaker": "System",
+      "message": "Please provide your PAN or Aadhaar number."
+    },
+    {
+      "timestamp": "2025-07-29T03:42:40.229801",
+      "speaker": "User",
+      "message": "{\"pan\": \"NAMWT4886W\", \"aadhaar\": \"631999289535\"}"
+    },
+    {
+      "timestamp": "2025-07-29T03:43:03.140203",
+      "speaker": "System",
+      "message": "Do you want to update your salary information?"
+    },
+    {
+      "timestamp": "2025-07-29T03:43:03.456500",
+      "speaker": "User",
+      "message": "{\"salary_update_confirmation\": \"no\"}"
+    }
+  ],
+  "agent_state": {},
+  "orchestrator_state": {
+    "escalation_attempts": {
+      "2530299106473428843": 0,
+      "3499986552533183983": 0,
+      "-4909018082814143961": 0
+    },
+    "conversation_history": [
+      "System: Please provide the loan amount you are requesting.",
+      "User: {\"amount\": \"20 lakh\"}",
+      "System: Please provide your PAN or Aadhaar number.",
+      "User: {\"pan\": \"NAMWT4886W\", \"aadhaar\": \"631999289535\"}",
+      "System: Do you want to update your salary information?",
+      "User: {\"salary_update_confirmation\": \"no\"}"
+    ],
+    "captured_agreement": null,
+    "captured_loan_details": null,
+    "captured_tool_outputs": {},
+    "stored_existing_user_data": {
+      "user_id": "user_1",
+      "monthly_salary": 64711,
+      "avg_monthly_balance": 95643.99,
+      "existing_emi": 12834,
+      "emi_to_income_ratio": 19.83,
+      "delayed_payments": 5,
+      "avg_daily_transactions": 11.86,
+      "bounced_transactions": 1,
+      "nach_failures": 0,
+      "age": 59,
+      "pan_number": "NAMWT4886W",
+      "aadhaar_number": "631999289535",
+      "status": "existing_user_data_retrieved",
+      "api_personal_details": {
+        "name": "Rajesh Kumar",
+        "age": 35,
+        "gender": "Male",
+        "address": "123 MG Road, Bangalore, Karnataka 560001",
+        "dob": "1988-03-15"
+      }
+    },
+    "current_question_type": null
+  },
+  "last_updated": "2025-07-29T03:43:03.458438",
+  "current_step_description": "Starting agent workflow"
+}
